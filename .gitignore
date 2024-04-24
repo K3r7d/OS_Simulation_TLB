@@ -1,0 +1,26 @@
+# Compiled Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.a
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Generated files
+*.dSYM/
+*.swo
+*.swp
+*.swn
+
+# Dependency files
+*.d
