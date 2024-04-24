@@ -10,7 +10,7 @@ typedef uint32_t addr_t;
 //typedef unsigned int uint32_t;
 
 struct pgn_t{
-   int pgn;
+   int pgn; // page number
    struct pgn_t *pg_next; 
 };
 
@@ -18,8 +18,8 @@ struct pgn_t{
  *  Memory region struct
  */
 struct vm_rg_struct {
-   unsigned long rg_start;
-   unsigned long rg_end;
+   unsigned long rg_start; // region start
+   unsigned long rg_end; // region end
 
    struct vm_rg_struct *rg_next;
 };
@@ -28,33 +28,33 @@ struct vm_rg_struct {
  *  Memory area struct
  */
 struct vm_area_struct {
-   unsigned long vm_id;
-   unsigned long vm_start;
-   unsigned long vm_end;
+   unsigned long vm_id; // memory id
+   unsigned long vm_start; // memory start
+   unsigned long vm_end; // memory end
 
-   unsigned long sbrk;
+   unsigned long sbrk; // break point
 /*
  * Derived field
  * unsigned long vm_limit = vm_end - vm_start
  */
-   struct mm_struct *vm_mm;
-   struct vm_rg_struct *vm_freerg_list;
-   struct vm_area_struct *vm_next;
+   struct mm_struct *vm_mm; // memory management
+   struct vm_rg_struct *vm_freerg_list; // free region list
+   struct vm_area_struct *vm_next; // next memory area
 };
 
 /* 
  * Memory management struct
  */
 struct mm_struct {
-   uint32_t *pgd;
+   uint32_t *pgd; // page directory
 
-   struct vm_area_struct *mmap;
+   struct vm_area_struct *mmap; // memory map
 
    /* Currently we support a fixed number of symbol */
-   struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ];
+   struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ]; // symbol region table
 
    /* list of free page */
-   struct pgn_t *fifo_pgn;
+   struct pgn_t *fifo_pgn; // first in first out page number
 };
 
 /*
@@ -62,24 +62,24 @@ struct mm_struct {
  */
 struct framephy_struct { 
    int fpn;
-   struct framephy_struct *fp_next;
+   struct framephy_struct *fp_next; // next frame
 
    /* Resereed for tracking allocated framed */
-   struct mm_struct* owner;
+   struct mm_struct* owner; // owner of the frame
 };
 
 struct memphy_struct {
    /* Basic field of data and size */
    BYTE *storage;
-   int maxsz;
+   int maxsz; 
    
    /* Sequential device fields */ 
-   int rdmflg;
-   int cursor;
+   int rdmflg; // read mode flag
+   int cursor; // read cursor
 
    /* Management structure */
-   struct framephy_struct *free_fp_list;
-   struct framephy_struct *used_fp_list;
+   struct framephy_struct *free_fp_list; // free frame list
+   struct framephy_struct *used_fp_list; // used frame list
 };
 
 #endif

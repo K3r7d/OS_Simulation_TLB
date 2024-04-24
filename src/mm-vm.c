@@ -181,7 +181,9 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     int tgtfpn = PAGING_SWP(pte);//the target frame storing our variable
 
-    /* TODO: Play with your paging theory here */
+    /* TODO: Play with your paging theory here */  
+
+//==============================================================================
     /* Find victim page */
     find_victim_page(caller->mm, &vicpgn);
 
@@ -191,12 +193,15 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
-    //__swap_cp_page();
+    __swap_cp_page(caller->mram, vicpgn,caller->active_mswp, swpfpn);
+
     /* Copy target frame from swap to mem */
     //__swap_cp_page();
 
     /* Update page table */
     //pte_set_swap() &mm->pgd;
+    pte_set_swap(&pte,PAGING_SWP_MASK, swpfpn);
+//==============================================================================
 
     /* Update its online status of the target page */
     //pte_set_fpn() & mm->pgd[pgn];
