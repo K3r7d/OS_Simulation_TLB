@@ -406,7 +406,18 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 {
   //struct vm_area_struct *vma = caller->mm->mmap;
 
+
   /* TODO validate the planned memory area is not overlapped */
+  //==============================================================================
+  struct vm_area_struct *vma = get_vma_by_num(caller->mm, vmaid);
+
+  while (vma != NULL)
+  {
+    if (vma->vm_start < vmaend && vma->vm_end > vmastart)
+      return -1; /* Overlap */
+    vma = vma->vm_next;
+  }
+  //==============================================================================
 
   return 0;
 }
@@ -452,10 +463,27 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   struct pgn_t *pg = mm->fifo_pgn;
 
   /* TODO: Implement the theorical mechanism to find the victim page */
+  
+  //==============================================================================
+  
+  // No page in fifo queue
+  if(pg == NULL)
+    return -1;
 
+  // Get the victim page number
+  int victim_page_number = pg->pgn;
+  
+  // Remove the victim page from the queue
+  mm->fifo_pgn = pg->pg_next;
   free(pg);
 
+  // Return the victim page number
+  if(retpgn != NULL)
+    *retpgn = victim_page_number;
+
   return 0;
+
+  //==============================================================================
 }
 
 /*get_free_vmrg_area - get a free vm region
