@@ -99,6 +99,22 @@ int vmap_page_range(struct pcb_t *caller, // process call
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
+  for (pgit = 0; pgit < pgnum; pgit++) {
+    // 1. Calculate the page number for the virtual address
+    int pgn = PAGING_PGN(addr + pgit * PAGING_PAGESZ);
+
+    // 2. Get the corresponding Page Table Entry (PTE)
+    uint32_t *pte = &caller->mm->pgd[pgn];
+
+    // 3. Set the frame number, mark as present
+    *pte = pte_set_fpn(*pte, fpit->fpn);
+
+    // 4. Update the virtual memory region for tracking
+    ret_rg->rg_end = addr + (pgit + 1) * PAGING_PAGESZ;  
+
+    // 5. Advance to the next frame for the next virtual page
+    fpit = fpit->fp_next;
+  }
 
    /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
