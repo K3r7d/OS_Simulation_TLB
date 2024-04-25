@@ -155,11 +155,31 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
    return 0;
 }
 
-int MEMPHY_dump(struct memphy_struct * mp)
-{
-    /*TODO dump memphy contnt mp->storage 
-     *     for tracing the memory content
-     */
+int MEMPHY_dump(struct memphy_struct *mp) {
+    if (mp == NULL || mp->storage == NULL) {
+        printf("Error: Invalid memphy_struct or empty storage.\n");
+        return -1;
+    }
+
+    printf("\n----- Memory Dump (size: %d bytes) -----\n", mp->maxsz);
+
+    // Hexadecimal and ASCII output
+    for (int i = 0; i < mp->maxsz; i++) {
+        if (i % 16 == 0) { 
+            printf("\n%04x: ", i);
+        }
+
+        // Hexadecimal byte
+        printf("%02x ", mp->storage[i]);
+
+        // ASCII representation (printable characters only)
+        if (mp->storage[i] >= 32 && mp->storage[i] <= 126) {
+            printf("%c", mp->storage[i]);
+        } else {
+            printf("."); // Non-printable character
+        }
+    }
+    printf("\n------------------------------------\n");
 
     return 0;
 }
