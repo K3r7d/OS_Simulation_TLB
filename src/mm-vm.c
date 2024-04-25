@@ -93,7 +93,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   }
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
-
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
@@ -105,15 +104,18 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
    */
-  inc_vma_limit(caller, vmaid, inc_sz);
-
-  /*Successful increase limit */
-  caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
-  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
-
-  *alloc_addr = old_sbrk;
-
-  return 0;
+  // Increase the limit of the memory area
+  if (inc_vma_limit(caller, vmaid, inc_sz) == 0) {
+    // If successful, update region table and allocated address
+    caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
+    caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+    *alloc_addr = old_sbrk;
+    return 0;
+  } else {
+    // If failed, handle error (e.g., return an error code)
+    return -1;
+  }
+  /* ALREADY DONE*/
 }
 
 /*__free - remove a region memory
@@ -131,11 +133,24 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
     return -1;
 
   /* TODO: Manage the collect freed region to freerg_list */
+  //Step 1: Find the memory region to free 
+  struct vm_area_struct *vma = caller->mm->mmap;
+  while (vma != NULL && vma->vm_id != vmaid) {
+    vma = vma->vm_next;
+  }
 
-  /*enlist the obsoleted memory region */
-  enlist_vm_freerg_list(caller->mm, rgnode);
+  if (vma == NULL) 
+    return -1;  // Error Handling: Memory area not found
 
-  return 0;
+  // Step 2: Extract region details from symbol region table
+  gnode = caller->mm->symrgtbl[rgid]; 
+
+  // Step 3: Integrate freed region into the free list
+  if (enlist_vm_freerg_list(caller->mm, rgnode) != 0) 
+    return -1; // Error handling: Unable to add to free list
+
+  return 0; // Success!
+  /*--------------------------------------PHUC MAI-------------------------------------------------*/
 }
 
 /*pgalloc - PAGING-based allocate a region memory
@@ -182,7 +197,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     int tgtfpn = PAGING_SWP(pte);//the target frame storing our variable
 
     /* TODO: Play with your paging theory here */  
-
+    /* DONE BY DEFAULT */
 //==============================================================================
     /* Find victim page */
     find_victim_page(caller->mm, &vicpgn);
@@ -423,7 +438,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
     vma = vma->vm_next;
   }
   //==============================================================================
-
+  /* DONE BY DEFAULT*/
   return 0;
 }
 
@@ -468,7 +483,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   struct pgn_t *pg = mm->fifo_pgn;
 
   /* TODO: Implement the theorical mechanism to find the victim page */
-  
+  /* DONE BY DEFAULT*/
   //==============================================================================
   
   // No page in fifo queue
