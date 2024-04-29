@@ -93,7 +93,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   }
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
-
   /*Attempt to increate limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
@@ -105,7 +104,13 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
    */
-  inc_vma_limit(caller, vmaid, inc_sz);
+
+  //==============================================================================
+  if(inc_vma_limit(caller, vmaid, inc_sz) == -1)
+  {
+    return -1;
+  }
+  //==============================================================================
 
   /*Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
@@ -131,6 +136,17 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
     return -1;
 
   /* TODO: Manage the collect freed region to freerg_list */
+  //==============================================================================
+  
+  /* Get the start and end of the region */
+  rgnode.rg_start = caller->mm->symrgtbl[rgid].rg_start;
+  rgnode.rg_end = caller->mm->symrgtbl[rgid].rg_end;
+
+  /* Check if the region is valid */
+  if(caller->mm->symrgtbl[rgid].rg_start == -1)
+    return -1;
+
+  //==============================================================================
 
   /*enlist the obsoleted memory region */
   enlist_vm_freerg_list(caller->mm, rgnode);
@@ -414,6 +430,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
 
   /* TODO validate the planned memory area is not overlapped */
   //==============================================================================
+  
   struct vm_area_struct *vma = get_vma_by_num(caller->mm, vmaid);
 
   while (vma != NULL)
@@ -422,6 +439,7 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
       return -1; /* Overlap */
     vma = vma->vm_next;
   }
+
   //==============================================================================
 
   return 0;
