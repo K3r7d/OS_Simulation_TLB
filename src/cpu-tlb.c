@@ -20,7 +20,10 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
 {
   /* TODO update all page table directory info 
    *      in flush or wipe TLB (if needed)
-   */
+   */ 
+
+    //  Chắc không cần phần này lắm, 
+
 
   return 0;
 }
@@ -28,7 +31,17 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
 int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 {
   /* TODO flush tlb cached*/
+  int index = 0; 
+  int max_index = proc->tlb->maxsz; 
+  for(index; index < max_index; index += 6) { 
+      if(proc->tlb->storage[index] == proc->pid){
 
+        //convert the PID into -1 to make sure
+        //that TLB cannot define it 
+        proc->tlb->storage[index] = -1;
+
+      } 
+  }
   return 0;
 }
 
@@ -46,6 +59,11 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
   /* TODO update TLB CACHED frame num of the new allocated page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
+  int pgn = PAGING_PGN(addr); 
+  //get the PTE
+  uint32_t pte = proc->mm->pgd[pgn];  
+
+  if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
 
   return val;
 }
@@ -62,6 +80,8 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
   /* TODO update TLB CACHED frame num of freed page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
 
+  // 
+
   return 0;
 }
 
@@ -75,11 +95,24 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
 int tlbread(struct pcb_t * proc, uint32_t source,
             uint32_t offset, 	uint32_t destination) 
 {
+  //done 
   BYTE data, frmnum = -1;
-	
+  BYTE check = 0; 
+  int addr = proc->regs[source] + offset;
+  //getting the page number 
+  int pgn = PAGING_PGN(addr);
+
   /* TODO retrieve TLB CACHED frame num of accessing page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
   /* frmnum is return value of tlb_cache_read/write value*/
+  frmnum = tlb_cache_read(proc->tlb,proc->pid,pgn,&check);
+
+  //check if the address is exists on RAM or not! 
+  if(check == -1) {
+      //if not exists -> get PAGE!, if not exists -> ERROR!
+      if(pg_getpage(proc->mm,pgn,&frmnum,proc) != 0) //Need page is loaded into RAM  
+        return -1; /* invalid page access */
+  } 
 	
 #ifdef IODUMP
   if (frmnum >= 0)
@@ -93,15 +126,30 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 #endif
   MEMPHY_dump(proc->mram);
 #endif
+   //if hit 
+  if(frmnum > 0) { 
+      //get the physic pos 
+      int phyaddr = (frmnum << PAGING_ADDR_FPN_LOBIT) + offset;
+      //read the TLB memphy, if there is no data -> error 
+      if(TLBMEMPHY_read(proc->mram,phyaddr,&data) == -1) 
+        return -1;  
+  }  
+  //if Miss 
+  else{  
+        /* TODO update TLB CACHED with frame num of recent accessing page(s)*/
+        /* by using tlb_cache_read()/tlb_cache_write()*/ 
+        __read(proc, 0, source, offset, &data);
+        //get the PTE from the table 
+          uint32_t pte = proc->mm->pgd[pgn];  
+        //perform writting on cache 
+          if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) 
+            return -1; /*cannot write~*/
+  } 
 
-  int val = __read(proc, 0, source, offset, &data);
+  //get it into the process register! 
+  proc->regs[destination] = (uint32_t)data; 
 
-  destination = (uint32_t) data;
-
-  /* TODO update TLB CACHED with frame num of recent accessing page(s)*/
-  /* by using tlb_cache_read()/tlb_cache_write()*/
-
-  return val;
+  return 0; 
 }
 
 /*tlbwrite - CPU TLB-based write a region memory
@@ -115,10 +163,24 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 {
   int val;
   BYTE frmnum = -1;
+  BYTE check = 0; 
 
+  int addr = proc->regs[destination] + offset;
+  //getting the page number and offset 
+    int pgn = PAGING_PGN(addr);
+    int off = PAGING_OFFST(addr);
+  //getting the PTE 
+  uint32_t pte = proc->mm->pgd[pgn];  
   /* TODO retrieve TLB CACHED frame num of accessing page(s))*/
   /* by using tlb_cache_read()/tlb_cache_write()
   frmnum is return value of tlb_cache_read/write value*/
+  frmnum = tlb_cache_read(proc->tlb,proc->pid,pgn,&check);
+
+  if(check == -1) {
+      //if not exists -> get PAGE!, if not exists -> ERROR!
+      if(pg_getpage(proc->mm,pgn,&frmnum,proc) != 0) //Need page is loaded into RAM  
+        return -1; /* invalid page access */
+  } 
 
 #ifdef IODUMP
   if (frmnum >= 0)
@@ -132,12 +194,25 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 #endif
   MEMPHY_dump(proc->mram);
 #endif
+  
+  // do if hit
+  if(frmnum >= 0) {
+      //get physical address
+      int phyaddr = (frmnum << PAGING_ADDR_FPN_LOBIT) + off;
+      //perform write 
+      val = MEMPHY_write(proc->mram,phyaddr,data); 
+  }
 
-  val = __write(proc, 0, destination, offset, data);
-
-  /* TODO update TLB CACHED with frame num of recent accessing page(s)*/
-  /* by using tlb_cache_read()/tlb_cache_write()*/
-
+  // do if miss   
+  else { 
+      /* TODO update TLB CACHED with frame num of recent accessing page(s)*/
+      /* by using tlb_cache_read()/tlb_cache_write()*/
+      val = __write(proc, 0, destination, offset, data);
+      uint32_t pte = proc->mm->pgd[pgn];  
+      //perform writting on cache 
+        if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) 
+            return -1; /*cannot write~*/
+  }
   return val;
 }
 

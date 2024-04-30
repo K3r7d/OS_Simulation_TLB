@@ -29,13 +29,39 @@
  *  @pgnum: page number
  *  @value: obtained value
  */
-int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE value)
+int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
 {
    /* TODO: the identify info is mapped to 
     *      cache line by employing:
     *      direct mapped, associated mapping etc.
     */
-   return 0;
+
+   //check if the PLB exists 
+   if(mp == NULL) return -1; 
+
+   //implement the jump parameter, 6 storing byte  
+   int szof = mp->maxsz / 6; 
+   int tlbnb = pgnum % szof;
+
+   //get the stored value in tlb 
+   int plb_pid = mp->storage[tlbnb]; 
+   int plb_pgnum = mp->storage[tlbnb+1]<<8|mp->storage[tlbnb+2];
+   
+   //check_again  
+   if(pid == plb_pid) {
+      if(pgnum == plb_pgnum) {
+         //taking the PTE from PLB
+         int plb_pte =  mp->storage[tlbnb+3]<<16|mp->storage[tlbnb+4]<<8|mp->storage[tlbnb+5];
+         //check if page is exists on RAM, if not then pg_getpage 
+         if(!PAGING_PAGE_PRESENT(plb_pte)) {
+            data = -1; return -1;
+         }
+         //geting the frame number if everything is OK 
+         int frgnb = PAGING_FPN(plb_pte);
+         return frgnb; 
+      }
+   }
+   return -1;    
 }
 
 /*
@@ -45,20 +71,40 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE value)
  *  @pgnum: page number
  *  @value: obtained value
  */
-int tlb_cache_write(struct memphy_struct *mp, int pid, int pgnum, BYTE value)
+int tlb_cache_write(struct memphy_struct *mp,  
+                   int pid, 
+                   int pgnum, 
+                   int pte
+                   )
 {
    /* TODO: the identify info is mapped to 
     *      cache line by employing:
     *      direct mapped, associated mapping etc.
     */
-   return 0;
+   
+    //check if the PLB exists 
+   if(mp == NULL || pgnum < 0) return -1; 
+
+   //implement the jump parameter, 6 storing byte  
+   int szof = mp->maxsz / 6; 
+   int tlbnb = pgnum % szof;
+
+        //perform of writing pid onto PLB 
+        mp->storage[tlbnb] = pid; //pid = 12 
+        //HOLDING of pg number 
+        mp->storage[tlbnb + 1] = (pgnum >> 8) & 0xff; //HIGH byte holding pg number 
+        mp->storage[tlbnb + 2] = (pgnum) & 0xff;  //LOW byte holding pg number 
+        //Holding of PTE
+        mp->storage[tlbnb + 3] = (pte >> 16) & 0xff; 
+        mp->storage[tlbnb + 4] = (pte >> 8) & 0xff;  
+        mp->storage[tlbnb + 5] = (pte) & 0xff; 
 }
 
 /*
  *  TLBMEMPHY_read natively supports MEMPHY device interfaces
  *  @mp: memphy struct
  *  @addr: address
- *  @value: obtained value
+ *  @value: obtained value 
  */
 int TLBMEMPHY_read(struct memphy_struct * mp, int addr, BYTE *value)
 {
@@ -85,21 +131,20 @@ int TLBMEMPHY_write(struct memphy_struct * mp, int addr, BYTE data)
 
    /* TLB cached is random access by native */
    mp->storage[addr] = data;
-
    return 0;
 }
 
 /*
- *  TLBMEMPHY_format natively supports MEMPHY device interfaces
+ *  TLBMEMPHY_format natively supports MEMPHY device interfaces, use for debug
  *  @mp: memphy struct
  */
-
 
 int TLBMEMPHY_dump(struct memphy_struct * mp)
 {
    /*TODO dump memphy contnt mp->storage 
     *     for tracing the memory content
     */
+   MEMPHY_dump(mp); 
 
    return 0;
 }
