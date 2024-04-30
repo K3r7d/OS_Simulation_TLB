@@ -4,7 +4,7 @@
 #include "string.h"
 #include <pthread.h>
 #include <stdio.h>
- 
+
 static BYTE _ram[RAM_SIZE];
 
 static struct {
@@ -156,16 +156,27 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 
 		// Add entries to segment table page tables of [proc]
 		int segment_index = (ret_mem / PAGE_SIZE) >> SEGMENT_LEN; 
-		struct trans_table_t* trans_table = get_trans_table(segment_index, proc->page_table);
+        struct trans_table_t* trans_table = get_trans_table(segment_index, proc->page_table);
 
-		for (int i = 0; i < num_pages; i++) {
-			int page_index = (ret_mem / PAGE_SIZE) + i; 
-			int physical_page_index = /* Find matching entry in _mem_stat */;
+        for (int i = 0; i < num_pages; i++) {
+        	int page_index = (ret_mem / PAGE_SIZE) + i; 
 
-			trans_table->table[trans_table->size].v_index = page_index & ((1 << SECOND_LV_LEN) - 1); 
-			trans_table->table[trans_table->size].p_index = physical_page_index;
-			trans_table->size++;
-		}
+        	// Find matching entry in _mem_stat 
+            int physical_page_index = -1;  
+            for (int j = 0; j < NUM_PAGES; j++) {
+                if (_mem_stat[j].proc == proc->pid) {
+                    if (_mem_stat[j].index == -1 || 
+                        (_mem_stat[j].next != -1 && _mem_stat[_mem_stat[j].next].index == j)) {
+                        physical_page_index = j;
+                        break;
+                    }
+                }
+            }
+
+            trans_table->table[trans_table->size].v_index = page_index & ((1 << SECOND_LV_LEN) - 1); 
+            trans_table->table[trans_table->size].p_index = physical_page_index;
+            trans_table->size++;
+        }
 		/*------------------------------------------PHUC MAI------------------------------------------*/
 	}
 	pthread_mutex_unlock(&mem_lock);
