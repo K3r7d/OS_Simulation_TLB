@@ -54,7 +54,8 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
          int plb_pte =  mp->storage[tlbnb+3]<<16|mp->storage[tlbnb+4]<<8|mp->storage[tlbnb+5];
          //check if page is exists on RAM, if not then pg_getpage 
          if(!PAGING_PAGE_PRESENT(plb_pte)) {
-            data = -1; return -1;
+            *data = -1; 
+            return -1;
          }
          //geting the frame number if everything is OK 
          int frgnb = PAGING_FPN(plb_pte);
