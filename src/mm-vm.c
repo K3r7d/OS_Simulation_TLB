@@ -133,25 +133,24 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
     return -1;
 
   /* TODO: Manage the collect freed region to freerg_list */
-  //Step 1: Find the memory region to free 
-  struct vm_area_struct *vma = caller->mm->mmap;
-  while (vma != NULL && vma->vm_id != vmaid) {
-    vma = vma->vm_next;
-  }
+  //==============================================================================
+  
+  /* Get the start and end of the region */
+  rgnode.rg_start = caller->mm->symrgtbl[rgid].rg_start;
+  rgnode.rg_end = caller->mm->symrgtbl[rgid].rg_end;
 
-  if (vma == NULL) 
-    return -1;  // Error Handling: Memory area not found
+  /* Check if the region is valid */
+  if(caller->mm->symrgtbl[rgid].rg_start == -1)
+    return -1;
 
-  // Step 2: Extract region details from symbol region table
-  gnode = caller->mm->symrgtbl[rgid]; 
+  //==============================================================================
 
-  // Step 3: Integrate freed region into the free list
-  if (enlist_vm_freerg_list(caller->mm, rgnode) != 0) 
-    return -1; // Error handling: Unable to add to free list
+  /*enlist the obsoleted memory region */
+  enlist_vm_freerg_list(caller->mm, rgnode);
 
-  return 0; // Success!
-  /*--------------------------------------PHUC MAI-------------------------------------------------*/
+  return 0;
 }
+
 
 /*pgalloc - PAGING-based allocate a region memory
  *@proc:  Process executing the instruction
