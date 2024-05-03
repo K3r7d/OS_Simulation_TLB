@@ -64,6 +64,7 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
   //get the PTE
   uint32_t pte = proc->mm->pgd[pgn];  
 
+  //check for write
   if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
 
   return val;
@@ -97,7 +98,8 @@ int tlbread(struct pcb_t * proc, uint32_t source,
             uint32_t offset, 	uint32_t destination) 
 {
   //done 
-  BYTE data, frmnum = -1;
+  BYTE data; 
+  int frmnum = -1;
   BYTE check = 0; 
   int addr = proc->regs[source] + offset;
   //getting the page number 
@@ -110,9 +112,11 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 
   //check if the address is exists on RAM or not! 
   if(check == -1) {
+
       //if not exists -> get PAGE!, if not exists -> ERROR!
-      if(pg_getpage(proc->mm,pgn,&frmnum,proc) != 0) //Need page is loaded into RAM  
+      if(pg_getpage(proc->mm,pgn,&frmnum,proc) != 0) // Need page is loaded into RAM  
         return -1; /* invalid page access */
+
   } 
 	
 #ifdef IODUMP
@@ -127,6 +131,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 #endif
   MEMPHY_dump(proc->mram);
 #endif
+
    //if hit 
   if(frmnum > 0) { 
       //get the physic pos 
@@ -163,15 +168,14 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
              uint32_t destination, uint32_t offset)
 {
   int val;
-  BYTE frmnum = -1;
+  int frmnum = -1;
   BYTE check = 0; 
 
   int addr = proc->regs[destination] + offset;
   //getting the page number and offset 
     int pgn = PAGING_PGN(addr);
     int off = PAGING_OFFST(addr);
-  //getting the PTE 
-  uint32_t pte = proc->mm->pgd[pgn];  
+ 
   /* TODO retrieve TLB CACHED frame num of accessing page(s))*/
   /* by using tlb_cache_read()/tlb_cache_write()
   frmnum is return value of tlb_cache_read/write value*/
