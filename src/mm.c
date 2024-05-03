@@ -249,12 +249,12 @@ int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct* rgnode)
   return 0;
 }
 
-int enlist_pgn_node(struct pgn_t **plist, uint32_t* pte, int fpn)
+int enlist_pgn_node(struct pgn_t **pgnlist, uint32_t* pte, int fpn)
 {
   struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
   pnode->pgn = fpn;
-  pnode->pg_next = *plist;
-  *plist = pnode;
+  pnode->pg_next = *pgnlist;
+  *pgnlist = pnode;
 
   return 0;
 }
