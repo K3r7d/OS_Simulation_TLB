@@ -5,6 +5,8 @@
 #define PAGING_MAX_MMSWP 4 /* max number of supported swapped space */
 #define PAGING_MAX_SYMTBL_SZ 30
 
+#include <pthread.h>
+
 typedef char BYTE;
 typedef uint32_t addr_t;
 //typedef unsigned int uint32_t;
@@ -80,6 +82,12 @@ struct memphy_struct {
    /* Management structure */
    struct framephy_struct *free_fp_list; // free frame list
    struct framephy_struct *used_fp_list; // used frame list
+   
+   struct framephy_struct *fifo_fp_list; // first in first out frame list
+
+   /*Mutex Lock*/
+   pthread_mutex_t lock;
+   pthread_mutex_t fifo_lock;
 };
 
 #endif
