@@ -39,36 +39,27 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
    //check if the PLB exists 
    if(mp == NULL) return -1; 
 
-   //implement the jump parameter, 10 storing byte  
-   int szof = mp->maxsz / 10; 
+   //implement the jump parameter, 6 storing byte  
+   int szof = mp->maxsz / 6; 
    int tlbnb = pgnum % szof;
 
    //get the stored value in tlb 
-   int plb_pid = mp->storage[tlbnb] << 24 | mp->storage[tlbnb + 1] << 16 | mp->storage[tlbnb + 2] << 8 | mp->storage[tlbnb + 3];
-
-   //get page number 
-   int plb_pgnum = mp->storage[tlbnb + 4] << 8 | mp->storage[tlbnb + 5];
-
-   //get PTE 
-   int plb_pte = mp->storage[tlbnb + 6] << 24 | mp->storage[tlbnb + 7] << 16 | mp->storage[tlbnb + 8] << 8 | mp->storage[tlbnb + 9];
-
-
+   int plb_pid = mp->storage[tlbnb]; 
+   int plb_pgnum = mp->storage[tlbnb+1]<<8|mp->storage[tlbnb+2];
+   
    //check_again  
    if(pid == plb_pid) {
       if(pgnum == plb_pgnum) {
-
+         //taking the PTE from PLB
+         int plb_pte =  mp->storage[tlbnb+3]<<16|mp->storage[tlbnb+4]<<8|mp->storage[tlbnb+5];
          //check if page is exists on RAM, if not then pg_getpage 
          if(!PAGING_PAGE_PRESENT(plb_pte)) {
             *data = -1; 
             return -1;
          }
-
-         //get frame number
+         //geting the frame number if everything is OK 
          int frgnb = PAGING_FPN(plb_pte);
-
-         //return the frame number 
          return frgnb; 
-
       }
    }
    return -1;    
@@ -95,27 +86,19 @@ int tlb_cache_write(struct memphy_struct *mp,
     //check if the PLB exists 
    if(mp == NULL || pgnum < 0) return -1; 
 
-   //implement the jump parameter, 10 storing byte  
-   int szof = mp->maxsz / 10; 
+   //implement the jump parameter, 6 storing byte  
+   int szof = mp->maxsz / 6; 
    int tlbnb = pgnum % szof;
 
         //perform of writing pid onto PLB 
-        mp->storage[tlbnb] = (pid >> 24) & 0xff; //HIGH byte of holding PLB
-        mp->storage[tlbnb + 1] = (pid >> 16) & 0xff; 
-        mp->storage[tlbnb + 2] = (pid >> 8) & 0xff; 
-        mp->storage[tlbnb + 3] = (pid) & 0xff; //LOW byte of holding PLB
-
+        mp->storage[tlbnb] = pid; //pid = 12 
         //HOLDING of pg number 
-        mp->storage[tlbnb + 4] = (pgnum >> 8) & 0xff; //HIGH byte holding pg number 
-        mp->storage[tlbnb + 5] = (pgnum) & 0xff;  //LOW byte holding pg number 
-
+        mp->storage[tlbnb + 1] = (pgnum >> 8) & 0xff; //HIGH byte holding pg number 
+        mp->storage[tlbnb + 2] = (pgnum) & 0xff;  //LOW byte holding pg number 
         //Holding of PTE
-        mp->storage[tlbnb + 6] = (pte >> 24) & 0xff; //HIGH byte holding pg number 
-        mp->storage[tlbnb + 7] = (pte >> 16) & 0xff;  
-        mp->storage[tlbnb + 8] = (pte >> 8) & 0xff;
-        mp->storage[tlbnb + 9] = (pte) & 0xff;  //LOW byte holding pg number 
-
-   return 0; 
+        mp->storage[tlbnb + 3] = (pte >> 16) & 0xff; 
+        mp->storage[tlbnb + 4] = (pte >> 8) & 0xff;  
+        mp->storage[tlbnb + 5] = (pte) & 0xff; 
 }
 
 /*

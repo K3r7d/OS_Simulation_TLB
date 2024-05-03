@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "mm.h": "c",
+        "common.h": "c",
+        "os-mm.h": "c",
+        "os-cfg.h": "c"
+    }
+}
