@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifdef CPU_TLB 
+#define MM_TLB 
+#endif 
+
 /* 
  * init_pte - Initialize PTE entry
  */
