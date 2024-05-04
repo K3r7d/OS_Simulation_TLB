@@ -47,30 +47,38 @@
 	};
 
 
-	static void * cpu_routine(void * args) {
+	static void * cpu_routine(void * args) 
+	{
 		struct timer_id_t * timer_id = ((struct cpu_args*)args)->timer_id;
 		int id = ((struct cpu_args*)args)->id;
 		/* Check for new process in ready queue */
 		int time_left = 0;
 		struct pcb_t * proc = NULL;
-		while (1) {
+		while (1) 
+		{
 			/* Check the status of current process */
-			if (proc == NULL) {
+			if (proc == NULL) 
+			{
 				/* No process is running, the we load new process from
 				* ready queue */
 				proc = get_proc();
-				if (proc == NULL) {
+				if (proc == NULL) 
+				{
 							next_slot(timer_id);
 							continue; /* First load failed. skip dummy load */
-							}
-			}else if (proc->pc == proc->code->size) {
+				}
+			}
+			else if (proc->pc == proc->code->size) 
+			{
 				/* The porcess has finish it job */
 				printf("\tCPU %d: Processed %2d has finished\n",
 					id ,proc->pid);
 				free(proc);
 				proc = get_proc();
 				time_left = 0;
-			}else if (time_left == 0) {
+			}
+			else if (time_left == 0) 
+			{
 				/* The process has done its job in current time slot */
 				printf("\tCPU %d: Put process %2d to run queue\n",
 					id, proc->pid);
@@ -79,17 +87,22 @@
 			}
 			
 			/* Recheck process status after loading new process */
-			if (proc == NULL && done) {
+			if (proc == NULL && done) 
+			{
 				/* No process to run, exit */
 				printf("\tCPU %d stopped\n", id);
 				break;
-			}else if (proc == NULL) {
+			}
+			else if (proc == NULL) 
+			{
 				/* There may be new processes to run in
 				* next time slots, just skip current slot */
 				next_slot(timer_id);
 				continue;
-			}else if (time_left == 0) {
-				printf("\tCPU %d: Dispatched process %2d\n",
+			}
+			else if (time_left == 0) 
+			{
+				printf("\tCPU %d: Dispatched process with PID%2d\n",
 					id, proc->pid);
 				time_left = time_slot;
 			}
@@ -119,7 +132,7 @@
 	#ifdef MLQ_SCHED
 			proc->prio = ld_processes.prio[i];
 	#else
-			printf ("==== DEBUG ====: Priority: %d\n", proc->priority);
+			// printf ("==== DEBUG ====: Priority: %d\n", proc->priority);
 	#endif
 			while (current_time() < ld_processes.start_time[i]) {
 				next_slot(timer_id);
@@ -181,7 +194,7 @@
 	#endif
 
 	#ifdef MM_PAGING
-		int sit;
+		// int sit;
 	#ifdef MM_FIXED_MEMSZ
 		/* We provide here a back compatible with legacy OS simulatiom config file
 		* In which, it have no addition config line for Mema, keep only one line
