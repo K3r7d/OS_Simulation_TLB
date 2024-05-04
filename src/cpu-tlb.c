@@ -54,6 +54,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
+  printf("tlballoc!\n");
   int addr, val;
 
   /* By default using vmaid = 0 */
@@ -99,6 +100,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
             uint32_t offset, 	uint32_t destination) 
 {
   //done 
+  printf("read!\n");
   BYTE data; 
   int frmnum = -1;
   BYTE check = 0; 

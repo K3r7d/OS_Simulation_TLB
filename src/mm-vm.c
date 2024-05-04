@@ -8,7 +8,9 @@
 #include "mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
 
+pthread_mutex_t vmlock;
 /*enlist_vm_freerg_list - add new rg to freerg_list
  *@mm: memory region
  *@rg_elmt: new region
@@ -81,10 +83,14 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
  *@size: allocated size 
  *@alloc_addr: address of allocated memory region
  *
- */
-int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
+ */int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
 {
-  /*Allocate at the toproof */
+  pthread_mutex_lock(&vmlock);
+  
+  /* Lock the caller's mm struct */
+  pthread_mutex_lock(&caller->mm->lock);
+
+  /* Allocate at the top of the memory region */
   struct vm_rg_struct rgnode;
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
@@ -94,11 +100,31 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
     *alloc_addr = rgnode.rg_start;
 
+    // Map the page to physical memory
+    int fpn;
+    if (MEMPHY_get_freefp(caller->mram, &fpn) == -1){
+      // Failed to get a free frame
+      pthread_mutex_unlock(&caller->mm->lock);
+      pthread_mutex_unlock(&vmlock);
+      return -1;
+    }
+
+    pthread_mutex_lock(&caller->mram->lock);
+    MEMPHY_get_freefp(caller->mram, &fpn);
+    pthread_mutex_unlock(&caller->mram->lock);
+
+    // Calculate the page number
+    int pgn = PAGING_PGN(rgnode.rg_start);
+
+    // Set the page table entry
+    pte_set_fpn(&caller->mm->pgd[pgn], fpn);
+
+    pthread_mutex_unlock(&caller->mm->lock);
+    pthread_mutex_unlock(&vmlock);
     return 0;
   }
-
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
-  /*Attempt to increate limit to get space */
+  /* Attempt to increase limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
   //int inc_limit_ret
@@ -110,23 +136,24 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
    * inc_vma_limit(caller, vmaid, inc_sz)
    */
 
-  //==============================================================================
   if(inc_vma_limit(caller, vmaid, inc_sz) == -1)
   {
+    pthread_mutex_unlock(&caller->mm->lock);
+    pthread_mutex_unlock(&vmlock);
     return -1;
   }
-  //==============================================================================
 
-  /*Successful increase limit */
+  /* Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
   *alloc_addr = old_sbrk;
 
-  
-
+  pthread_mutex_unlock(&caller->mm->lock);
+  pthread_mutex_unlock(&vmlock);
   return 0;
 }
+
 
 /*__free - remove a region memory
  *@caller: caller
@@ -193,59 +220,56 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
  */
 int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
-  uint32_t pte = mm->pgd[pgn];
+    uint32_t pte = mm->pgd[pgn];
   
-  // Check if the page table entry is valid
-  if (pte == 0)
-    return -1; // Invalid page access
+    // Check if the page table entry is valid
+    if (pte == 0)
+        return -1; // Invalid page access
 
-  // If the page is not present in memory
-  if (!PAGING_PAGE_PRESENT(pte))
-  { 
-    printf("pg_getpage: page fault\n"); // Print page fault message
+    // If the page is not present in memory
+    if (!PAGING_PAGE_PRESENT(pte))
+    { 
+        printf("pg_getpage: page fault\n"); // Print page fault message
 
-    int vicpgn, swpfpn;
+        int swpfpn = PAGING_SWP(pte); // Get the target frame storing the page we want to access
     
-    int tgtfpn = PAGING_SWP(pte); // Get the target frame storing the page we want to access
-    
-    /* Find victim page */
-    find_victim_page(caller->mm, &vicpgn); // Find a victim page to swap out
+        /* Find victim page */
+        int vicpgn;
+        find_victim_page(caller->mm, &vicpgn); // Find a victim page to swap out
 
-    /* Get free frame in MEMSWP */
-    pthread_mutex_lock(&caller->active_mswp->lock);
-    MEMPHY_get_freefp(caller->active_mswp, &swpfpn); // Get a free frame in swap space
-    pthread_mutex_unlock(&caller->active_mswp->lock);
+        /* Get free frame in MEMSWP */
+        int tgtfpn;
 
-    /* Swap victim frame to swap space */
-    __swap_cp_page(caller->mram, vicpgn, caller->active_mswp, swpfpn); // Copy victim frame to swap space
+        pthread_mutex_lock(&caller->active_mswp->lock);
+        MEMPHY_get_freefp(caller->active_mswp->free_fp_list, &tgtfpn); // Get a free frame in swap space
+        pthread_mutex_unlock(&caller->active_mswp->lock);
 
-    /* Swap target frame from swap space to memory */
-    __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicpgn); // Copy target frame from swap to memory
+        /* Swap victim frame to swap space */
+        __swap_cp_page(caller->mram, vicpgn, caller->active_mswp, tgtfpn); // Copy victim frame to swap space
 
-    /* Put target frame in MEMSWP free list */
-    pthread_mutex_lock(&caller->active_mswp->lock);
-    MEMPHY_put_freefp(caller->active_mswp, tgtfpn); // Put target frame in free list of swap space
-    pthread_mutex_unlock(&caller->active_mswp->lock);
+        /* Swap target frame from swap space to memory */
+        __swap_cp_page(caller->active_mswp, swpfpn, caller->mram, vicpgn); // Copy target frame from swap to memory
 
-    /* Update page table to indicate the swap */
-    pte_set_swap(&pte, 0, swpfpn); // Set page table entry to indicate swap
+        /* Update page table to indicate the swap */
+        pte_set_swap(&pte, 0, swpfpn); // Clear swap bit, indicating the page is now in memory
+        pte_set_fpn(&mm->pgd[pgn], vicpgn); // Set the frame page number in page table entry
 
-    pte_set_fpn(&mm->pgd[pgn], vicpgn); // Set the frame page number in page table entry
+        /* Enlist page to FIFO queue */
+        pthread_mutex_lock(&caller->mram->fifo_lock);
+        enlist_pgn_node(&caller->mram->fifo_fp_list, &mm->pgd[pgn], vicpgn); // Enlist page in FIFO queue
+        pthread_mutex_unlock(&caller->mram->fifo_lock);
+        // Set frame page number to the one retrieved from the swap space
+        *fpn = vicpgn; 
+    }
+    else 
+    {
+        // Retrieve frame page number from page table entry
+        *fpn = PAGING_FPN(pte);
+    }
 
-    /* Enlist page to FIFO queue */
-    pthread_mutex_lock(&caller->mram->fifo_lock);
-    enlist_pgn_node(&caller->mram->fifo_fp_list, &mm->pgd[pgn], vicpgn); // Enlist page in FIFO queue
-    pthread_mutex_unlock(&caller->mram->fifo_lock);
-
-    // Set frame page number to the one retrieved from the swap space
-    *fpn = vicpgn; // Enlist page in FIFO queue
-  }
-
-  // Retrieve frame page number from page table entry
-  else *fpn = PAGING_FPN(pte);
-
-  return 0;
+    return 0;
 }
+
 
 
 /*pg_getval - read value at given offset

@@ -128,6 +128,9 @@ static void * ld_routine(void * args) {
 		proc->mram = mram;
 		proc->mswp = mswp;
 		proc->active_mswp = active_mswp;
+#ifdef CPU_TLB
+	proc->tlb = ((struct mmpaging_ld_args *)args)->tlb;
+#endif
 #endif
 		printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
 			ld_processes.path[i], proc->pid, ld_processes.prio[i]);
@@ -187,7 +190,8 @@ static void read_config(const char * path) {
 	 *        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
 	*/
 	// fscanf(file, "%d\n", &memramsz);
-
+	fscanf(file, "%d %d %d %d %d\n", &memramsz, &memswpsz[0], &memswpsz[1], &memswpsz[2], &memswpsz[3]);
+	
 #endif
 #endif
 
