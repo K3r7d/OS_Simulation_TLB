@@ -419,7 +419,6 @@ int pgwrite(
  *@incpgnum: number of page
  */
 
-//TAI SAO KHONG LAM
 int free_pcb_memph(struct pcb_t *caller)
 {
   int pagenum, fpn;
