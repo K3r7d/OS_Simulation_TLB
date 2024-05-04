@@ -106,7 +106,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
    /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
-   enlist_pgn_node(&caller->mm->fifo_pgn, &caller->mm->pgd[pgn], fpit->fpn);
+   enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
 
 
   return 0;
@@ -249,12 +249,13 @@ int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct* rgnode)
   return 0;
 }
 
-int enlist_pgn_node(struct pgn_t **pgnlist, uint32_t* pte, int fpn)
+int enlist_pgn_node(struct pgn_t **pgnlist, int pgn)
 {
-  struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
-  pnode->pgn = fpn;
-  pnode->pg_next = *pgnlist;
-  *pgnlist = pnode;
+  struct pgn_t *pgnnode = malloc(sizeof(struct pgn_t));
+
+  pgnnode->pgn = pgn;
+  pgnnode->pg_next = *pgnlist;
+  *pgnlist = pgnnode;
 
   return 0;
 }

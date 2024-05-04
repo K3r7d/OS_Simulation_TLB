@@ -220,54 +220,60 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
  */
 int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
-    uint32_t pte = mm->pgd[pgn];
-  
-    // Check if the page table entry is valid
-    if (pte == 0)
-        return -1; // Invalid page access
-
-    // If the page is not present in memory
-    if (!PAGING_PAGE_PRESENT(pte))
-    { 
-        printf("pg_getpage: page fault\n"); // Print page fault message
-
-        int swpfpn = PAGING_SWP(pte); // Get the target frame storing the page we want to access
-    
-        /* Find victim page */
-        int vicpgn;
-        find_victim_page(caller->mm, &vicpgn); // Find a victim page to swap out
-
-        /* Get free frame in MEMSWP */
-        int tgtfpn;
-
-        pthread_mutex_lock(&caller->active_mswp->lock);
-        MEMPHY_get_freefp(caller->active_mswp->free_fp_list, &tgtfpn); // Get a free frame in swap space
-        pthread_mutex_unlock(&caller->active_mswp->lock);
-
-        /* Swap victim frame to swap space */
-        __swap_cp_page(caller->mram, vicpgn, caller->active_mswp, tgtfpn); // Copy victim frame to swap space
-
-        /* Swap target frame from swap space to memory */
-        __swap_cp_page(caller->active_mswp, swpfpn, caller->mram, vicpgn); // Copy target frame from swap to memory
-
-        /* Update page table to indicate the swap */
-        pte_set_swap(&pte, 0, swpfpn); // Clear swap bit, indicating the page is now in memory
-        pte_set_fpn(&mm->pgd[pgn], vicpgn); // Set the frame page number in page table entry
-
-        /* Enlist page to FIFO queue */
-        pthread_mutex_lock(&caller->mram->fifo_lock);
-        enlist_pgn_node(&caller->mram->fifo_fp_list, &mm->pgd[pgn], vicpgn); // Enlist page in FIFO queue
-        pthread_mutex_unlock(&caller->mram->fifo_lock);
-        // Set frame page number to the one retrieved from the swap space
-        *fpn = vicpgn; 
+  uint32_t pte = mm->pgd[pgn];
+  if (!PAGING_PAGE_PRESENT(pte)) // A frame has not been assigned for this page
+  {
+    int new_fpn;
+    if (MEMPHY_get_freefp(caller->mram, &new_fpn) < 0)
+    { // RAM has no free frame
+      int vicpgn;
+      find_victim_page(caller->mm, &vicpgn);
+      uint32_t vic_pte = mm->pgd[vicpgn];
+      int vicfpn = PAGING_FPN(vic_pte);
+      int swpfpn;
+      MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+      __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
+      pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
+      new_fpn = vicfpn;
     }
-    else 
-    {
-        // Retrieve frame page number from page table entry
-        *fpn = PAGING_FPN(pte);
-    }
+    pte_set_fpn(&mm->pgd[pgn], new_fpn);
+  }
+  else if (pte & PAGING_PTE_SWAPPED_MASK)
+  { /* Page is not online, make it actively living */
+    int vicpgn, swpfpn;
+    int tgtfpn = PAGING_SWP(pte);
 
-    return 0;
+    /* TODO: Play with your paging theory here */
+    /* Find victim page */
+    find_victim_page(caller->mm, &vicpgn);
+    uint32_t vic_pte = mm->pgd[vicpgn];
+    int vicfpn = PAGING_FPN(vic_pte);
+
+    /* Get free frame in MEMSWP */
+    MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+
+    /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
+    /* Copy victim frame to swap */
+    //__swap_cp_page();
+    __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
+    /* Copy target frame from swap to mem */
+    //__swap_cp_page();
+    __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
+
+    /* Update page table */
+    // pte_set_swap() &mm->pgd;
+    pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
+
+    /* Update its online status of the target page */
+    // pte_set_fpn() & mm->pgd[pgn];
+    pte_set_fpn(&mm->pgd[pgn], vicfpn);
+
+    enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+  }
+
+  *fpn = PAGING_FPN(mm->pgd[pgn]);
+
+  return 0;
 }
 
 
