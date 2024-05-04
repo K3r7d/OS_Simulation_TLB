@@ -34,15 +34,9 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
   /* TODO flush tlb cached*/
   int index = 0; 
   int max_index = proc->tlb->maxsz; 
-  for(index = 0; index < max_index; index += 6) 
+  for(index = 0; index < max_index; index += 10) 
   { 
-      if(proc->tlb->storage[index] == proc->pid)
-      {
-        //convert the PID into -1 to make sure
-        //that TLB cannot define it 
-        proc->tlb->storage[index] = -1;
-
-      } 
+      if(tlb_pid())
   }
   return 0;
 }
