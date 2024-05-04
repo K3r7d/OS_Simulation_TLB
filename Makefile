@@ -10,6 +10,7 @@ CC = gcc
 DEBUG = -g
 CFLAGS = -Wall -c $(DEBUG)
 LFLAGS = -Wall $(DEBUG)
+LFLAGS = -pthread -Wall $(DEBUG)
 
 vpath %.c $(SRC)
 vpath %.h $(INCLUDE)

@@ -51,7 +51,7 @@ uint32_t tlb_pid(struct memphy_struct *mp, int pgnum){
 uint32_t tlb_pgn(struct memphy_struct *mp, int pgnum){ 
    int szof = mp->maxsz / 10; 
    int tlbnb = pgnum % szof;
-   return plb_pgnum = mp->storage[tlbnb + 4] << 8 | mp->storage[tlbnb + 5];
+   return  mp->storage[tlbnb + 4] << 8 | mp->storage[tlbnb + 5];
 }
 
 uint32_t tlb_pte(struct memphy_struct *mp, int pgnum){ 
