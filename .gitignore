@@ -24,3 +24,7 @@
 
 # Dependency files
 *.d
+
+#
+os
+.DS_Store
