@@ -23,7 +23,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
    *      in flush or wipe TLB (if needed)
    */ 
 
-    //  Chắc không cần phần này lắm, 
+    //  Chắc không cần phần này lắm, hoac khi change process co the can 
 
 
   return 0;
@@ -32,6 +32,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
 int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 {
   /* TODO flush tlb cached*/
+  if(mp == NULL) return -1; 
   int index = 0; 
   int max_index = proc->tlb->maxsz; 
   int tlb_id; 
@@ -51,6 +52,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
   printf("tlballoc!\n");
+  if(proc->tlb == NULL) return -1; 
   int addr, val;
 
   /* By default using vmaid = 0 */
