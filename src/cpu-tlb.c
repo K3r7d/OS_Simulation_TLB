@@ -34,9 +34,11 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
   /* TODO flush tlb cached*/
   int index = 0; 
   int max_index = proc->tlb->maxsz; 
+  int tlb_id; 
   for(index = 0; index < max_index; index += 10) 
   { 
-      if(tlb_pid())
+      tlb_id = mp->storage[tlbnb] << 24 | mp->storage[tlbnb + 1] << 16 | mp->storage[tlbnb + 2] << 8 | mp->storage[tlbnb + 3];
+      if(tlb_id == proc->pid) flush_rg(mp,tlbnb); 
   }
   return 0;
 }
