@@ -418,10 +418,12 @@ int pgwrite(
  *@vmaid: ID vm area to alloc memory region
  *@incpgnum: number of page
  */
+
+//TAI SAO KHONG LAM
 int free_pcb_memph(struct pcb_t *caller)
 {
   int pagenum, fpn;
-  uint32_t pte;
+  uint32_t pte;/*  */
 
 
   for(pagenum = 0; pagenum < PAGING_MAX_PGN; pagenum++)

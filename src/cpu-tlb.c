@@ -22,9 +22,10 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
   /* TODO update all page table directory info 
    *      in flush or wipe TLB (if needed)
    */ 
+  if(mp == NULL) return -1; 
 
-    //  Chắc không cần phần này lắm, hoac khi change process co the can 
-
+  pg
+     
 
   return 0;
 }
