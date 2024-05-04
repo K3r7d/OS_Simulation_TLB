@@ -84,10 +84,17 @@ void add_mlq_proc(struct pcb_t * proc) {
 }
 
 struct pcb_t * get_proc(void) {
-	return get_mlq_proc();
+	struct pcb_t *proc = get_mlq_proc(); 
+	#ifdef CPU_TLB
+		tlb_change_all_page_tables_of(proc,proc->tlb);  
+	#endif 
+	return proc; 
 }
 
 void put_proc(struct pcb_t * proc) {
+	#ifdef CPU_TLB 
+		tlb_flush_tlb_of(proc,proc->tlb); 
+	#endif 
 	return put_mlq_proc(proc);
 }
 
