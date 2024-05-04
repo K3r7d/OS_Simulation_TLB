@@ -3,16 +3,16 @@
 
 #include "common.h"
 
-#ifndef MLQ_SCHED
-#define MLQ_SCHED
-#endif
+// #ifndef MLQ_SCHED
+// #define MLQ_SCHED
+// #endif
 
 #define MAX_PRIO 139
 
 int queue_empty(void);
 
 void init_scheduler(void);
-void finish_scheduler(void);
+// void finish_scheduler(void);
 
 /* Get the next process from ready queue */
 struct pcb_t * get_proc(void);

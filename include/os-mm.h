@@ -55,7 +55,7 @@ struct mm_struct {
    /* Currently we support a fixed number of symbol */
    struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ]; // symbol region table
 
-   pthread_mutex_t lock;
+   
 
    /* list of free page */
    struct pgn_t *fifo_pgn; // first in first out page number
@@ -88,8 +88,7 @@ struct memphy_struct {
    struct framephy_struct *fifo_fp_list; // first in first out frame list
 
    /*Mutex Lock*/
-   pthread_mutex_t lock;
-   pthread_mutex_t fifo_lock;
+   
 };
 
 #endif
