@@ -6,6 +6,7 @@
         "__locale": "c",
         "chrono": "c",
         "functional": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "mutex": "c"
     }
 }
