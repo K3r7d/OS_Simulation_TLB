@@ -103,12 +103,26 @@ int vmap_page_range(struct pcb_t *caller, // process call
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
+  for(pgit = 0; pgit < pgnum; pgit++)
+  {
+    fpit = frames;
+    if(fpit == NULL) {
+      return -1; // Error: Not enough frames available
+    }
 
-   /* Tracking for later page replacement activities (if needed)
+    // Map the frame to the page in the page table
+    caller->mm->pgd[pgn + pgit] = fpit->fpn;
+
+    /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
-   enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+    enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit);
 
+    // Update the end of the region
+    ret_rg->rg_end += PAGING_PAGESZ;
 
+    // Move to the next frame
+    frames = fpit->fp_next;
+  }
   return 0;
 }
 
@@ -122,16 +136,39 @@ int vmap_page_range(struct pcb_t *caller, // process call
 int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
 {
   int pgit, fpn;
-  //struct framephy_struct *newfp_str;
-
+  struct framephy_struct *newfp_str;
+  if (frm_lst == NULL) {
+    return -1; // Error: No frame list provided
+  }
   for(pgit = 0; pgit < req_pgnum; pgit++)
   {
     if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
-   {
-     
-   } else {  // ERROR CODE of obtaining somes but not enough frames
-   } 
- }
+    {
+      // Allocate a new frame
+      newfp_str = (struct framephy_struct*) malloc(sizeof(struct framephy_struct));
+      if(newfp_str == NULL) {
+        return -1; // Error: Failed to allocate memory
+      }
+      newfp_str->fpn = fpn;
+      newfp_str->fp_next = NULL;
+
+      // Add the new frame to the list
+      if(frm_lst[pgit] == NULL) {
+        frm_lst[pgit] = newfp_str;
+      } else {
+        struct framephy_struct *current = frm_lst[pgit];
+        while(current->fp_next != NULL) {
+          current = current->fp_next;
+        }
+        current->fp_next = newfp_str;
+      }
+
+      // Enlist the page
+      enlist_pgn_node(&caller->mm->fifo_pgn, pgit);
+    } else {  // ERROR CODE of obtaining somes but not enough frames
+      return -1; // Error: Not enough frames available
+    } 
+  }
 
   return 0;
 }
