@@ -1,4 +1,3 @@
-
 INC = -Iinclude
 LIB = -lpthread
 
@@ -9,8 +8,7 @@ INCLUDE = include
 CC = gcc
 DEBUG = -g
 CFLAGS = -Wall -c $(DEBUG)
-LFLAGS = -Wall $(DEBUG)
-LFLAGS = -pthread -Wall $(DEBUG)
+LFLAGS = -Wall $(DEBUG) -pthread   # Added -pthread flag here
 
 vpath %.c $(SRC)
 vpath %.h $(INCLUDE)
@@ -25,7 +23,6 @@ SCHED_OBJ = $(addprefix $(OBJ)/, cpu.o loader.o)
 HEADER = $(wildcard $(INCLUDE)/*.h)
 
 all: os
-#mem sched os
 
 # Just compile memory management modules
 mem: $(MEM_OBJ) $(TLB_OBJ)
@@ -33,7 +30,7 @@ mem: $(MEM_OBJ) $(TLB_OBJ)
 
 # Just compile scheduler
 sched: $(SCHED_OBJ)
-	$(MAKE) $(LFLAGS) $(MEM_OBJ) -o sched $(LIB)
+	$(MAKE) $(LFLAGS) $(SCHED_OBJ) -o sched $(LIB)
 
 # Compile the whole OS simulation
 os: $(OS_OBJ)
@@ -49,4 +46,3 @@ $(OBJ):
 clean:
 	rm -f $(OBJ)/*.o os sched mem
 	rm -r $(OBJ)
-
