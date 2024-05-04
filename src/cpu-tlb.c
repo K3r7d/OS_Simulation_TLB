@@ -23,7 +23,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
    *      in flush or wipe TLB (if needed)
    */ 
 
-    //  Chắc không cần phần này lắm, 
+    //  Chắc không cần phần này lắm, hoac khi change process co the can 
 
 
   return 0;
@@ -38,8 +38,8 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
   int tlb_id; 
   for(index = 0; index < max_index; index += 10) 
   { 
-      tlb_id = mp->storage[tlbnb] << 24 | mp->storage[tlbnb + 1] << 16 | mp->storage[tlbnb + 2] << 8 | mp->storage[tlbnb + 3];
-      if(tlb_id == proc->pid) flush_rg(mp,tlbnb); 
+      tlb_id = mp->storage[index] << 24 | mp->storage[index + 1] << 16 | mp->storage[index + 2] << 8 | mp->storage[index + 3];
+      if(tlb_id == proc->pid) flush_rg(mp,index); 
   }
   return 0;
 }
