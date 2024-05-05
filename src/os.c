@@ -194,7 +194,7 @@
 	#endif
 
 	#ifdef MM_PAGING
-		// int sit;
+		int sit;
 	#ifdef MM_FIXED_MEMSZ
 		/* We provide here a back compatible with legacy OS simulatiom config file
 		* In which, it have no addition config line for Mema, keep only one line
@@ -210,8 +210,8 @@
 		* Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
 		*        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
 		*/
-		// fscanf(file, "%d\n", &memramsz);
-		// fscanf(file, "%d %d %d %d %d\n", &memramsz, &memswpsz[0], &memswpsz[1], &memswpsz[2], &memswpsz[3]);
+		fscanf(file, "%d\n", &memramsz);
+		fscanf(file, "%d %d %d %d %d\n", &memramsz, &memswpsz[0], &memswpsz[1], &memswpsz[2], &memswpsz[3]);
 		
 	#endif
 	#endif
