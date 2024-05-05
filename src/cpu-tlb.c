@@ -49,7 +49,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
-  printf("tlballoc!\n");
+  printf("tlballoc!, size \n");
   if(proc->tlb == NULL) return -1; 
   int addr, val;
 
@@ -58,12 +58,33 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
   /* TODO update TLB CACHED frame num of the new allocated page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
-  int pgn = PAGING_PGN(addr); 
-  //get the PTE
-  uint32_t pte = proc->mm->pgd[pgn];  
+
+  //get the regs check 
+  proc->regs[reg_index] = addr; 
 
   //check for write
-  if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
+  //get total space required 
+  int inc_amt = PAGING_PAGE_ALIGNSZ(size);
+
+  //get total page need 
+  int incnumpage =  inc_amt / PAGING_PAGESZ;
+
+  int i; 
+
+  //allocate the page 
+  for( i = 0; i < incnumpage; i++) {
+
+    //get page
+    int pgn = PAGING_PGN(addr+i*PAGING_PAGESZ);
+
+    //get the PTE
+    uint32_t pte = proc->mm->pgd[pgn];  
+    printf("png of address: %d, having PTE: %d\n",addr+i*PAGING_PAGESZ,pte);
+
+    //write the data on 
+    if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
+
+  }
 
   return val;
 }
@@ -85,7 +106,6 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
   return 0;
 }
 
-
 /*tlbread - CPU TLB-based read a region memory
  *@proc: Process executing the instruction
  *@source: index of source register
@@ -93,7 +113,7 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
  *@destination: destination storage
  */
 int tlbread(struct pcb_t * proc, uint32_t source,
-            uint32_t offset, 	uint32_t destination) 
+            uint32_t offset,  uint32_t destination) 
 {
   //done 
   printf("read!\n");
@@ -117,14 +137,14 @@ int tlbread(struct pcb_t * proc, uint32_t source,
         return -1; /* invalid page access */
 
   } 
-	
+  
 #ifdef IODUMP
   if (frmnum >= 0)
     printf("TLB hit at read region=%d offset=%d\n", 
-	         source, offset);
+           source, offset);
   else 
     printf("TLB miss at read region=%d offset=%d\n", 
-	         source, offset);
+           source, offset);
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); //print max TBL
 #endif
@@ -189,8 +209,8 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 #ifdef IODUMP
   if (frmnum >= 0)
     printf("TLB hit at write region=%d offset=%d value=%d\n",
-	          destination, offset, data);
-	else
+            destination, offset, data);
+  else
     printf("TLB miss at write region=%d offset=%d value=%d\n",
             destination, offset, data);
 #ifdef PAGETBL_DUMP
@@ -221,3 +241,4 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 }
 
 #endif
+
