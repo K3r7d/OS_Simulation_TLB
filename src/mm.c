@@ -162,7 +162,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
       /* Update the victim page entry to SWAPPED */
       pte_set_swap(victim_pte, 0, swpfpn);
       /* Update the new page entry to FPN */
-      //print_pgtbl(caller, 0, -1);
+      print_pgtbl(caller, 0, -1);
       fpn = victim_fpn;
     }
 
