@@ -227,9 +227,9 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       int vicfpn = PAGING_FPN(vic_pte);
       int swpfpn;
 
-      pthread_mutex_lock(&mem_lock);
+      pthread_mutex_lock(&caller->mram->lock);
       MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
-      pthread_mutex_unlock(&mem_lock);
+      pthread_mutex_unlock(&caller->mram->lock);
 
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
