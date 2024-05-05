@@ -37,21 +37,33 @@ void enqueue (struct queue_t * q, struct pcb_t * proc)
 // ===== NON-PREEMPTIVE ===== //	
 struct pcb_t * dequeue(struct queue_t * q) 
 {
-    /* TODO: return a pcb whose priority is the highest
-     * in the queue [q] without removing it from the queue
-     */
-    if (!empty(q)) {
+    if (!empty(q)) 
+    {
         int highest_priority_index = 0;
-        for (int i = 1; i < q->size; i++) {
-            if (q->proc[i]->priority > q->proc[highest_priority_index]->priority) {
+        for (int i = 1; i < q->size; i++)
+        {
+            #ifdef MLQ_SCHED
+            if (q->proc[i]->prio > q->proc[highest_priority_index]->prio)
                 highest_priority_index = i;
-            }
+            #else
+            if (q->proc[i]->priority > q->proc[highest_priority_index]->priority)
+                highest_priority_index = i;
+            #endif
         }
-		q->size--;
-        return q->proc[highest_priority_index];
+                
+        struct pcb_t *proc = q->proc[highest_priority_index];
+        
+        // Shift elements to the left to remove the dequeued process
+        for (int i = highest_priority_index; i < q->size - 1; i++) 
+            q->proc[i] = q->proc[i + 1];
+        
+        q->size--;
+        
+        return proc;
     }
     return NULL;
 }
+
 
 
 
