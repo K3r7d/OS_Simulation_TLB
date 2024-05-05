@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
  *  @mp: memphy struct
@@ -161,34 +160,31 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
 int MEMPHY_dump(struct memphy_struct *mp)
 {
-   /*TODO dump memphy contnt mp->storage
-    *     for tracing the memory content
-    */
-   if (!mp && !mp->storage)
+   if (!mp || !mp->storage)
    {
-      printf("There is no data at the moment.\n");
+      printf("Memory is empty.\n");
       return -1;
    }
 
-   char result[1000] = "Memory content-[pos, content]: ";
-   char temp[100];
-   for (int i = 0; i < mp->maxsz; i++)
+   if (pthread_mutex_lock(&mp->lock) != 0)
    {
-      if (mp->storage[i] != '\0')
-      {
-         snprintf(temp, sizeof(temp), "[%d, %d]", i, mp->storage[i]);
-         if (strlen(result) + strlen(temp) < sizeof(result))
-         {
-            strcat(result, temp);
-         }
-         else
-         {
-            printf("Insufficient storage to hold data.\n");
-            break;
-         }
-      }
+      perror("Error: failed to lock mutex");
+      return -1;
    }
-   printf("%s\n", result);
+
+   printf("Memory content-[pos, content]: ");
+   for (int i = 0; i < mp->cursor; i++)
+   {
+      printf("[%d, %u] ", i, (unsigned char)mp->storage[i]);
+   }
+   printf("\n");
+
+   if (pthread_mutex_unlock(&mp->lock) != 0)
+   {
+      perror("Error: failed to unlock mutex");
+      return -1;
+   }
+
    return 0;
 }
 
