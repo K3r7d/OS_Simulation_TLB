@@ -47,30 +47,57 @@ struct cpu_args {
 };
 
 
-static void * cpu_routine(void * args) {
+void toString_pcb (const struct pcb_t * proc) 
+{
+	printf ("====== DEBUG =====\n");
+	if (proc == NULL)
+	{
+		printf ("Process is NULL\n");
+		printf ("===== END =====\n");
+		return;
+	}
+    printf ("PID: %u\n", proc->pid);
+    printf ("Priority: %u\n", proc->priority);
+	
+#ifdef MLQ_SCHED
+    printf ("Prio: %u\n", proc->prio);
+#endif
+	printf ("===== END =====\n");
+}
+
+
+static void * cpu_routine(void * args) 
+{
 	struct timer_id_t * timer_id = ((struct cpu_args*)args)->timer_id;
 	int id = ((struct cpu_args*)args)->id;
 	/* Check for new process in ready queue */
 	int time_left = 0;
 	struct pcb_t * proc = NULL;
-	while (1) {
+	while (1) 
+	{
 		/* Check the status of current process */
-		if (proc == NULL) {
+		if (proc == NULL) 
+		{
 			/* No process is running, the we load new process from
-		 	* ready queue */
+			* ready queue */
 			proc = get_proc();
-			if (proc == NULL) {
-                           next_slot(timer_id);
-                           continue; /* First load failed. skip dummy load */
-                        }
-		}else if (proc->pc == proc->code->size) {
-			/* The porcess has finish it job */
+			if (proc == NULL) 
+			{
+				next_slot(timer_id);
+				continue; /* First load failed. skip dummy load */
+			}
+		}
+		else if (proc->pc == proc->code->size) 
+		{
+			/* The process has finish it job */
 			printf("\tCPU %d: Processed %2d has finished\n",
 				id ,proc->pid);
 			free(proc);
 			proc = get_proc();
 			time_left = 0;
-		}else if (time_left == 0) {
+		}
+		else if (time_left == 0) 
+		{
 			/* The process has done its job in current time slot */
 			printf("\tCPU %d: Put process %2d to run queue\n",
 				id, proc->pid);
@@ -79,17 +106,22 @@ static void * cpu_routine(void * args) {
 		}
 		
 		/* Recheck process status after loading new process */
-		if (proc == NULL && done) {
+		if (proc == NULL && done) 
+		{
 			/* No process to run, exit */
 			printf("\tCPU %d stopped\n", id);
 			break;
-		}else if (proc == NULL) {
+		}
+		else if (proc == NULL) 
+		{
 			/* There may be new processes to run in
-			 * next time slots, just skip current slot */
+			* next time slots, just skip current slot */
 			next_slot(timer_id);
 			continue;
-		}else if (time_left == 0) {
-			printf("\tCPU %d: Dispatched process %2d\n",
+		}
+		else if (time_left == 0) 
+		{
+			printf("\tCPU %d: Dispatched process%2d\n",
 				id, proc->pid);
 			time_left = time_slot;
 		}
@@ -118,6 +150,8 @@ static void * ld_routine(void * args) {
 		struct pcb_t * proc = load(ld_processes.path[i]);
 #ifdef MLQ_SCHED
 		proc->prio = ld_processes.prio[i];
+#else
+		// printf ("==== DEBUG ====: Priority: %d\n", proc->priority);
 #endif
 		while (current_time() < ld_processes.start_time[i]) {
 			next_slot(timer_id);
@@ -128,12 +162,18 @@ static void * ld_routine(void * args) {
 		proc->mram = mram;
 		proc->mswp = mswp;
 		proc->active_mswp = active_mswp;
+#endif
 #ifdef CPU_TLB
 	proc->tlb = ((struct mmpaging_ld_args *)args)->tlb;
 #endif
-#endif
+
+#if defined (MLQ_SCHED)
 		printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
 			ld_processes.path[i], proc->pid, ld_processes.prio[i]);
+#else
+		printf("\tLoaded a process at %s, PID: %d PRIO: %d\n",
+			ld_processes.path[i], proc->pid, proc->priority);
+#endif
 		add_proc(proc);
 		free(ld_processes.path[i]);
 		i++;
@@ -160,13 +200,13 @@ static void read_config(const char * path) {
 #ifdef CPU_TLB
 #ifdef CPUTLB_FIXED_TLBSZ
 	/* We provide here a back compatible with legacy OS simulatiom config file
-	 * In which, it have no addition config line for CPU_TLB
-	 */
+	* In which, it have no addition config line for CPU_TLB
+	*/
 	tlbsz = 0x10000;
 #else
 	/* Read input config of TLB size:
-	 * Format:
-	 *        CPU_TLBSZ
+	* Format:
+	*        CPU_TLBSZ
 	*/
 	fscanf(file, "%d\n", &tlbsz);
 #endif
@@ -176,20 +216,20 @@ static void read_config(const char * path) {
 	int sit;
 #ifdef MM_FIXED_MEMSZ
 	/* We provide here a back compatible with legacy OS simulatiom config file
-	 * In which, it have no addition config line for Mema, keep only one line
-	 * for legacy info 
-	 *  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
-	 */
+	* In which, it have no addition config line for Mema, keep only one line
+	* for legacy info 
+	*  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
+	*/
 	memramsz    =  0x100000;
 	memswpsz[0] = 0x1000000;
 	for(sit = 1; sit < PAGING_MAX_MMSWP; sit++)
 		memswpsz[sit] = 0;
 #else
 	/* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
-	 * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
-	 *        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
+	* Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
+	*        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
 	*/
-	// fscanf(file, "%d\n", &memramsz);
+	//fscanf(file, "%d\n", &memramsz);
 	fscanf(file, "%d %d %d %d %d\n", &memramsz, &memswpsz[0], &memswpsz[1], &memswpsz[2], &memswpsz[3]);
 	
 #endif
@@ -205,7 +245,7 @@ static void read_config(const char * path) {
 		ld_processes.path[i][0] = '\0';
 		strcat(ld_processes.path[i], "input/proc/");
 		char proc[100];
-#ifdef MLQ_SCHED
+#if defined (MLQ_SCHED)
 		fscanf(file, "%lu %s %lu\n", &ld_processes.start_time[i], proc, &ld_processes.prio[i]);
 #else
 		fscanf(file, "%lu %s\n", &ld_processes.start_time[i], proc);
@@ -259,7 +299,7 @@ int main(int argc, char * argv[]) {
 	/* Create all MEM SWAP */ 
 	int sit;
 	for(sit = 0; sit < PAGING_MAX_MMSWP; sit++)
-	       init_memphy(&mswp[sit], memswpsz[sit], rdmflag);
+		init_memphy(&mswp[sit], memswpsz[sit], rdmflag);
 
 	/* In Paging mode, it needs passing the system mem to each PCB through loader*/
 	struct mmpaging_ld_args *mm_ld_args = malloc(sizeof(struct mmpaging_ld_args));
@@ -273,7 +313,7 @@ int main(int argc, char * argv[]) {
 #ifdef CPU_TLB
 #ifdef MM_PAGING
 	/* In MM_PAGING employ CPU_TLB mode, it needs passing
-	 * the system tlb to each PCB through loader
+	* the system tlb to each PCB through loader
 	*/
 	mm_ld_args->tlb = (struct memphy_struct *) &tlb;
 #endif

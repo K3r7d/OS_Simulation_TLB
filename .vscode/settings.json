@@ -5,6 +5,8 @@
         "stdint.h": "c",
         "__locale": "c",
         "chrono": "c",
-        "functional": "c"
+        "functional": "c",
+        "stdio.h": "c",
+        "mutex": "c"
     }
 }

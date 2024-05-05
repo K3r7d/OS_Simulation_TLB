@@ -89,29 +89,39 @@ int vmap_page_range(struct pcb_t *caller, // process call
            struct framephy_struct *frames,// list of the mapped frames
               struct vm_rg_struct *ret_rg)// return mapped region, the real mapped fp
 {                                         // no guarantee all given pages are mapped
-  //uint32_t * pte = malloc(sizeof(uint32_t));
-  struct framephy_struct *fpit = malloc(sizeof(struct framephy_struct));
-  //int  fpn;
+  
   int pgit = 0;
   int pgn = PAGING_PGN(addr);
 
   ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
 
-  fpit->fp_next = frames;
-
   /* TODO map range of frame to address space 
    *      [addr to addr + pgnum*PAGING_PAGESZ
    *      in page table caller->mm->pgd[]
    */
+  for(pgit = 0; pgit < pgnum; pgit++)
+  {
+    if(frames == NULL) {
+      return -1; // Error: Not enough frames available
+    }
 
-   /* Tracking for later page replacement activities (if needed)
+    // Map the frame to the page in the page table
+    caller->mm->pgd[pgn + pgit] = frames->fpn;
+
+    /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
-   enlist_pgn_node(&caller->mm->fifo_pgn, &caller->mm->pgd[pgn], fpit->fpn);
+    pthread_mutex_lock(&caller->mram->fifo_lock);
+    enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit);
+    pthread_mutex_unlock(&caller->mram->fifo_lock);
 
+    // Update the end of the region
+    ret_rg->rg_end += PAGING_PAGESZ;
 
+    // Move to the next frame
+    frames = frames->fp_next;
+  }
   return 0;
 }
-
 /* 
  * alloc_pages_range - allocate req_pgnum of frame in ram
  * @caller    : caller
@@ -122,16 +132,64 @@ int vmap_page_range(struct pcb_t *caller, // process call
 int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
 {
   int pgit, fpn;
-  //struct framephy_struct *newfp_str;
-
+  struct framephy_struct *newfp_str;
+  if (frm_lst == NULL) {
+    return -1; // Error: No frame list provided
+  }
   for(pgit = 0; pgit < req_pgnum; pgit++)
   {
-    if(MEMPHY_get_freefp(caller->mram, &fpn) == 0)
-   {
-     
-   } else {  // ERROR CODE of obtaining somes but not enough frames
-   } 
- }
+    int freefp_found = MEMPHY_get_freefp(caller->mram, &fpn);
+    if(freefp_found < 0) // Not enough frame, must swap
+    {
+      printf("Alloc pages: not enough free frames in ram\n");
+      int swpfpn;
+      int victim_pte; //pointer to page table entry
+
+      /* Find victim page */
+      if (find_victim_page(caller->mm, &victim_pte) < 0) return -1;
+      
+      int victim_fpn = PAGING_PGN(victim_pte);
+
+      /* Get free frame in MEMSWP */
+      int free_swp = MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+      if (free_swp < 0) return -1;
+
+      /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
+      /* Copy victim frame to swap */
+      __swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn); // potential param type mismatch
+
+      /* Update page table */
+      /* Update the victim page entry to SWAPPED */
+      pte_set_swap(&victim_pte, 0, swpfpn);
+      /* Update the new page entry to FPN */
+      print_pgtbl(caller, 0, -1);
+      fpn = victim_fpn;
+    }
+
+    // Allocate a new frame
+    newfp_str = (struct framephy_struct*) malloc(sizeof(struct framephy_struct));
+    if(newfp_str == NULL) {
+      return -1; // Error: Failed to allocate memory
+    }
+    newfp_str->fpn = fpn;
+    newfp_str->fp_next = NULL;
+
+    // Add the new frame to the list
+    if(frm_lst[pgit] == NULL) {
+      frm_lst[pgit] = newfp_str;
+    } else {
+      struct framephy_struct *current = frm_lst[pgit];
+      while(current->fp_next != NULL) {
+        current = current->fp_next;
+      }
+      current->fp_next = newfp_str;
+    }
+
+    // Enlist the page
+    pthread_mutex_lock(&caller->mram->fifo_lock);
+    enlist_pgn_node(&caller->mm->fifo_pgn, pgit);
+    pthread_mutex_unlock(&caller->mram->fifo_lock);
+  }
 
   return 0;
 }
@@ -249,12 +307,13 @@ int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct* rgnode)
   return 0;
 }
 
-int enlist_pgn_node(struct pgn_t **pgnlist, uint32_t* pte, int fpn)
+int enlist_pgn_node(struct pgn_t **pgnlist, int pgn)
 {
-  struct pgn_t* pnode = malloc(sizeof(struct pgn_t));
-  pnode->pgn = fpn;
-  pnode->pg_next = *pgnlist;
-  *pgnlist = pnode;
+  struct pgn_t *pgnnode = malloc(sizeof(struct pgn_t));
+
+  pgnnode->pgn = pgn;
+  pgnnode->pg_next = *pgnlist;
+  *pgnlist = pgnnode;
 
   return 0;
 }

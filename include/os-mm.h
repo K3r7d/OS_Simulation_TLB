@@ -6,6 +6,7 @@
 #define PAGING_MAX_SYMTBL_SZ 30
 
 #include <pthread.h>
+#include <sys/types.h>  
 
 typedef char BYTE;
 typedef uint32_t addr_t;
@@ -55,7 +56,7 @@ struct mm_struct {
    /* Currently we support a fixed number of symbol */
    struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ]; // symbol region table
 
-   pthread_mutex_t lock;
+   
 
    /* list of free page */
    struct pgn_t *fifo_pgn; // first in first out page number
@@ -90,6 +91,7 @@ struct memphy_struct {
    /*Mutex Lock*/
    pthread_mutex_t lock;
    pthread_mutex_t fifo_lock;
+   
 };
 
 #endif

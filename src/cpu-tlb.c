@@ -22,9 +22,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
   /* TODO update all page table directory info 
    *      in flush or wipe TLB (if needed)
    */ 
-
-    //  Chắc không cần phần này lắm, 
-
+  
 
   return 0;
 }
@@ -32,18 +30,24 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
 int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 {
   /* TODO flush tlb cached*/
-  int index = 0; 
-  int max_index = proc->tlb->maxsz; 
-  for(index = 0; index < max_index; index += 6) 
-  { 
-      if(proc->tlb->storage[index] == proc->pid)
-      {
-        //convert the PID into -1 to make sure
-        //that TLB cannot define it 
-        proc->tlb->storage[index] = -1;
+  if(mp == NULL) return -1; 
 
-      } 
+  //get all the pte of:
+  struct vm_area_struct *cur_vma = get_vma_by_num(proc->mm, 0);
+  int start = 0; 
+  int end = PAGING_PGN(cur_vma->vm_end);
+  int pgit; 
+  int check; 
+  for(pgit = start; pgit < end; pgit++)
+  {
+     int frm = tlb_cache_read(proc->tlb,proc->pid,pgit,&check); 
+     if(frm >= 0) { 
+      int szof = mp->maxsz / 10; 
+      int tlbnb = pgit % szof;
+      flush_rg(proc->tlb,tlbnb);
+     }
   }
+
   return 0;
 }
 
@@ -54,7 +58,8 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
-  printf("tlballoc!\n");
+  printf("tlballoc!, size \n");
+  if(proc->tlb == NULL) return -1; 
   int addr, val;
 
   /* By default using vmaid = 0 */
@@ -62,12 +67,35 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
   /* TODO update TLB CACHED frame num of the new allocated page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
-  int pgn = PAGING_PGN(addr); 
-  //get the PTE
-  uint32_t pte = proc->mm->pgd[pgn];  
+
+  //get the regs check 
+  proc->regs[reg_index] = addr; 
 
   //check for write
-  if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
+  //get total space required 
+  int inc_amt = PAGING_PAGE_ALIGNSZ(size);
+
+  //get total page need 
+  int incnumpage =  inc_amt / PAGING_PAGESZ;
+
+  int i; 
+
+  //allocate the page 
+  for( i = 0; i < incnumpage; i++) {
+
+    int new_addr = addr+i*PAGING_PAGESZ;
+
+    //get page
+    int pgn = PAGING_PGN(new_addr);
+
+    //get the PTE
+    uint32_t pte = proc->mm->pgd[pgn];  
+    printf("png of address: %d, having PTE: %d\n",new_addr,pte);
+
+    //write the data on 
+    if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
+
+  }
 
   return val;
 }
@@ -89,7 +117,6 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
   return 0;
 }
 
-
 /*tlbread - CPU TLB-based read a region memory
  *@proc: Process executing the instruction
  *@source: index of source register
@@ -97,7 +124,7 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
  *@destination: destination storage
  */
 int tlbread(struct pcb_t * proc, uint32_t source,
-            uint32_t offset, 	uint32_t destination) 
+            uint32_t offset,  uint32_t destination) 
 {
   //done 
   printf("read!\n");
@@ -121,14 +148,14 @@ int tlbread(struct pcb_t * proc, uint32_t source,
         return -1; /* invalid page access */
 
   } 
-	
+  
 #ifdef IODUMP
   if (frmnum >= 0)
     printf("TLB hit at read region=%d offset=%d\n", 
-	         source, offset);
+           source, offset);
   else 
     printf("TLB miss at read region=%d offset=%d\n", 
-	         source, offset);
+           source, offset);
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); //print max TBL
 #endif
@@ -193,8 +220,8 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 #ifdef IODUMP
   if (frmnum >= 0)
     printf("TLB hit at write region=%d offset=%d value=%d\n",
-	          destination, offset, data);
-	else
+            destination, offset, data);
+  else
     printf("TLB miss at write region=%d offset=%d value=%d\n",
             destination, offset, data);
 #ifdef PAGETBL_DUMP
@@ -225,3 +252,4 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 }
 
 #endif
+

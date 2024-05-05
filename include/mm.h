@@ -2,6 +2,7 @@
 
 #include "bitops.h"
 #include "common.h"
+#include <pthread.h>
 
 /* CPU Bus definition */
 #define PAGING_CPU_BUS_WIDTH 22 /* 22bit bus - MAX SPACE 4MB */
@@ -91,10 +92,13 @@
 #define INCLUDE(x1,x2,y1,y2) (((y1-x1)*(x2-y2)>=0)?1:0)
 #define OVERLAP(x1,x2,y1,y2) (((y2-x1)*(x2-y1)>=0)?1:0)
 
+extern pthread_mutex_t lock;
+extern pthread_mutex_t mem_lock;
+
 /* VM region prototypes */
 struct vm_rg_struct * init_vm_rg(int rg_start, int rg_endi);
 int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct* rgnode);
-int enlist_pgn_node(struct pgn_t** pgnlist, u_int32_t* pte, int fpn);
+int enlist_pgn_node(struct pgn_t** pgnlist,int pgn);
 int vmap_page_range(struct pcb_t *caller, int addr, int pgnum, 
                     struct framephy_struct *frames, struct vm_rg_struct *ret_rg);
 int vm_map_ram(struct pcb_t *caller, int astart, int send, int mapstart, int incpgnum, struct vm_rg_struct *ret_rg);
@@ -170,4 +174,8 @@ int print_list_vma(struct vm_area_struct *rg);
 
 int print_list_pgn(struct pgn_t *ip);
 int print_pgtbl(struct pcb_t *ip, uint32_t start, uint32_t end);
+
+/*tlb*/
+void flush_rg(struct memphy_struct *mp, int tlbnb);
+
 #endif
