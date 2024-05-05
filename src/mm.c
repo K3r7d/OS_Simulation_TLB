@@ -186,7 +186,9 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
     }
 
     // Enlist the page
+    pthread_mutex_lock(&caller->mram->fifo_lock);
     enlist_pgn_node(&caller->mm->fifo_pgn, pgit);
+    pthread_mutex_unlock(&caller->mram->fifo_lock);
   }
 
   return 0;
