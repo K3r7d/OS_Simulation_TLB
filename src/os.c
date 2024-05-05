@@ -210,7 +210,7 @@
 		* Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
 		*        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
 		*/
-		fscanf(file, "%d\n", &memramsz);
+		//fscanf(file, "%d\n", &memramsz);
 		fscanf(file, "%d %d %d %d %d\n", &memramsz, &memswpsz[0], &memswpsz[1], &memswpsz[2], &memswpsz[3]);
 		
 	#endif
