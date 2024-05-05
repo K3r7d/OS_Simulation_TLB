@@ -143,12 +143,12 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
     {
       printf("Alloc pages: not enough free frames in ram\n");
       int swpfpn;
-      uint32_t* victim_pte; //pointer to page table entry
+      int victim_pte; //pointer to page table entry
 
       /* Find victim page */
-      if (find_victim_page(caller->mram, &victim_pte) < 0) return -1;
+      if (find_victim_page(caller->mm, &victim_pte) < 0) return -1;
       
-      int victim_fpn = PAGING_PTE_FPN(*victim_pte);
+      int victim_fpn = PAGING_PGN(*victim_pte);
 
       /* Get free frame in MEMSWP */
       int free_swp = MEMPHY_get_freefp(caller->active_mswp, &swpfpn);

@@ -35,6 +35,7 @@
  // 0x AA BB: Pgnumber (14 bits store in 16 bits or 2 byte) 
  // 0x AA BB CC DD: PTE (32 bits or 4 bytes)
 void flush_rg(struct memphy_struct *mp, int tlbnb){
+   if(tlbnb + 10 >= mp->maxsz) return -1; 
    int index; 
    for(index = 0; index < 10; index++){
       mp->storage[tlbnb + index] = 0; 

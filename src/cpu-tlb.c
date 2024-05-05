@@ -22,7 +22,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
   /* TODO update all page table directory info 
    *      in flush or wipe TLB (if needed)
    */ 
-     
+  
 
   return 0;
 }
@@ -31,14 +31,21 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 {
   /* TODO flush tlb cached*/
   if(mp == NULL) return -1; 
-  int index = 0; 
-  int max_index = proc->tlb->maxsz; 
-  int tlb_id; 
-  for(index = 0; index < max_index; index += 10) 
-  { 
-      tlb_id = mp->storage[index] << 24 | mp->storage[index + 1] << 16 | mp->storage[index + 2] << 8 | mp->storage[index + 3];
-      if(tlb_id == proc->pid) flush_rg(mp,index); 
+
+  //get all the pte of:
+  struct vm_area_struct *cur_vma = get_vma_by_num(proc->mm, 0);
+  int start = 0; 
+  int end = PAGING_PGN(cur_vma->vm_end);
+  int pgit; 
+  int check; 
+  for(pgit = start; pgit < end; pgit++)
+  {
+     int frm = tlb_cache_read(proc->tlb,proc->pid,pgit,&check); 
+     if(frm >= 0) { 
+      flush_rg(proc->tlb, )
+     }
   }
+
   return 0;
 }
 
