@@ -42,7 +42,9 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
   {
      int frm = tlb_cache_read(proc->tlb,proc->pid,pgit,&check); 
      if(frm >= 0) { 
-      flush_rg(proc->tlb, )
+      int szof = mp->maxsz / 10; 
+      int tlbnb = pgnum % szof;
+      flush_rg(proc->tlb,tlbnb);
      }
   }
 
