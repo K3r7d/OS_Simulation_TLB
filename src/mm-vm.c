@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <pthread.h>
 
-
 /*enlist_vm_freerg_list - add new rg to freerg_list
  *@mm: memory region
  *@rg_elmt: new region
@@ -37,7 +36,6 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
   mm->mmap->vm_freerg_list = newrg;
 
 
-
   return 0;
 }
 
@@ -58,7 +56,7 @@ struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid)
   while (vmait < vmaid)
   {
     if(pvma == NULL)
-	  return NULL;
+    return NULL;
 
     vmait++;
     pvma = pvma->vm_next;
@@ -95,6 +93,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
+
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
 
@@ -112,10 +111,20 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     pthread_mutex_unlock(&caller->mram->lock);
 
     // Calculate the page number
-    int pgn = PAGING_PGN(rgnode.rg_start);
 
-    // Set the page table entry
-    pte_set_fpn(&caller->mm->pgd[pgn], fpn);
+    int inc_amt = PAGING_PAGE_ALIGNSZ(size);
+
+    //get total page need 
+    int incnumpage =  inc_amt / PAGING_PAGESZ;
+
+    //get first page need
+    int pgn = PAGING_PGN(rgnode.rg_start);
+    
+    int i; 
+    for(i = 0; i < incnumpage; i++) { 
+      // Set the page table entry
+      pte_set_fpn(&caller->mm->pgd[pgn+i], fpn+i);
+    }
 
     return 0;
   }
@@ -142,9 +151,9 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
   *alloc_addr = old_sbrk;
+
   return 0;
 }
-
 
 /*__free - remove a region memory
  *@caller: caller
@@ -175,7 +184,6 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 
   /*enlist the obsoleted memory region */
   enlist_vm_freerg_list(caller->mm, *rgnode);
-
 
   return 0;
 }
@@ -279,7 +287,6 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 }
 
 
-
 /*pg_getval - read value at given offset
  *@mm: memory region
  *@addr: virtual address to acess 
@@ -343,20 +350,19 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if(currg == NULL || cur_vma == NULL) /* Invalid memory identify */
-	  return -1;
+    return -1;
 
   pg_getval(caller->mm, currg->rg_start + offset, data, caller);
 
   return 0;
 }
 
-
 /*pgwrite - PAGING-based read a region memory */
 int pgread(
-		struct pcb_t * proc, // Process executing the instruction
-		uint32_t source, // Index of source register
-		uint32_t offset, // Source address = [source] + [offset]
-		uint32_t destination) 
+    struct pcb_t * proc, // Process executing the instruction
+    uint32_t source, // Index of source register
+    uint32_t offset, // Source address = [source] + [offset]
+    uint32_t destination) 
 {
   BYTE data;
   int val = __read(proc, 0, source, offset, &data);
@@ -388,7 +394,7 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   
   if(currg == NULL || cur_vma == NULL) /* Invalid memory identify */
-	  return -1;
+    return -1;
 
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
 
@@ -397,10 +403,10 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 
 /*pgwrite - PAGING-based write a region memory */
 int pgwrite(
-		struct pcb_t * proc, // Process executing the instruction
-		BYTE data, // Data to be wrttien into memory
-		uint32_t destination, // Index of destination register
-		uint32_t offset)
+    struct pcb_t * proc, // Process executing the instruction
+    BYTE data, // Data to be wrttien into memory
+    uint32_t destination, // Index of destination register
+    uint32_t offset)
 {
 #ifdef IODUMP
   printf("write region=%d offset=%d value=%d\n", destination, offset, data);
@@ -413,7 +419,6 @@ int pgwrite(
   return __write(proc, 0, destination, offset, data);
 }
 
-
 /*free_pcb_memphy - collect all memphy of pcb
  *@caller: caller
  *@vmaid: ID vm area to alloc memory region
@@ -424,7 +429,6 @@ int free_pcb_memph(struct pcb_t *caller)
 {
   int pagenum, fpn;
   uint32_t pte;/*  */
-
 
   for(pagenum = 0; pagenum < PAGING_MAX_PGN; pagenum++)
   {
@@ -474,7 +478,6 @@ struct vm_rg_struct* get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend)
 {
   //struct vm_area_struct *vma = caller->mm->mmap;
-
 
   /* TODO validate the planned memory area is not overlapped */
   //==============================================================================
@@ -605,7 +608,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
         }
         else
         { /*End of free list */
-          rgit->rg_start = rgit->rg_end;	//dummy, size 0 region
+          rgit->rg_start = rgit->rg_end;  //dummy, size 0 region
           rgit->rg_next = NULL;
         }
       }
@@ -613,7 +616,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
     }
     else
     {
-      rgit = rgit->rg_next;	// Traverse next rg
+      rgit = rgit->rg_next; // Traverse next rg
     }
   }
 
@@ -624,3 +627,5 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
 }
 
 //#endif
+
+

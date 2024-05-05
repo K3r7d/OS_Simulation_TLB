@@ -132,67 +132,34 @@ int vmap_page_range(struct pcb_t *caller, // process call
 int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct** frm_lst)
 {
   int pgit, fpn;
-  struct framephy_struct *newfp_str;
-  if (frm_lst == NULL) {
-    return -1; // Error: No frame list provided
-  }
-  for(pgit = 0; pgit < req_pgnum; pgit++)
+
+  for (pgit = 0; pgit < req_pgnum; pgit++)
   {
-    int freefp_found = MEMPHY_get_freefp(caller->mram, &fpn);
-    if(freefp_found < 0) // Not enough frame, must swap
-    {
-      printf("Alloc pages: not enough free frames in ram\n");
+    struct framephy_struct *new_fp = malloc(sizeof(struct framephy_struct));
+    if (MEMPHY_get_freefp(caller->mram, &fpn) != 0)
+    { // ERROR CODE of obtaining somes but not enough frames
+      // Find a victim page
+      int vicpgn;
+      find_victim_page(caller->mm, &vicpgn);
+      uint32_t vic_pte = caller->mm->pgd[vicpgn];
+      int vicfpn = PAGING_FPN(vic_pte);
+      // Find a free frame in mswp
       int swpfpn;
-      int victim_pte; //pointer to page table entry
-
-      /* Find victim page */
-      if (find_victim_page(caller->mm, &victim_pte) < 0) return -1;
-      
-      int victim_fpn = PAGING_PGN(victim_pte);
-
-      /* Get free frame in MEMSWP */
-      int free_swp = MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
-      if (free_swp < 0) return -1;
-
-      /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
-      /* Copy victim frame to swap */
-      __swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn); // potential param type mismatch
-
-      /* Update page table */
-      /* Update the victim page entry to SWAPPED */
-      pte_set_swap(&victim_pte, 0, swpfpn);
-      /* Update the new page entry to FPN */
-      print_pgtbl(caller, 0, -1);
-      fpn = victim_fpn;
+      MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+      // Copy content from mram to mswp
+      __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
+      pte_set_swap(&caller->mm->pgd[vicpgn], 0, swpfpn);
+      // Return this victim frame to the free frame list
+      fpn = vicfpn;
     }
-
-    // Allocate a new frame
-    newfp_str = (struct framephy_struct*) malloc(sizeof(struct framephy_struct));
-    if(newfp_str == NULL) {
-      return -1; // Error: Failed to allocate memory
-    }
-    newfp_str->fpn = fpn;
-    newfp_str->fp_next = NULL;
-
-    // Add the new frame to the list
-    if(frm_lst[pgit] == NULL) {
-      frm_lst[pgit] = newfp_str;
-    } else {
-      struct framephy_struct *current = frm_lst[pgit];
-      while(current->fp_next != NULL) {
-        current = current->fp_next;
-      }
-      current->fp_next = newfp_str;
-    }
-
-    // Enlist the page
-    pthread_mutex_lock(&caller->mram->fifo_lock);
-    enlist_pgn_node(&caller->mm->fifo_pgn, pgit);
-    pthread_mutex_unlock(&caller->mram->fifo_lock);
+    new_fp->fpn = fpn;
+    new_fp->fp_next = *frm_lst;
+    *frm_lst = new_fp;
   }
 
   return 0;
-}
+  }
+
 
 
 /* 

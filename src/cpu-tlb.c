@@ -58,7 +58,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
-  printf("tlballoc!, size \n");
+  printf("tlballoc!, size: %d, reg_index: %d \n", size,reg_index);
   if(proc->tlb == NULL) return -1; 
   int addr, val;
 
@@ -83,14 +83,14 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
   //allocate the page 
   for( i = 0; i < incnumpage; i++) {
 
-    int new_addr = addr+i*PAGING_PAGESZ;
+    uint32_t new_addr = addr+i*PAGING_PAGESZ;
 
     //get page
     int pgn = PAGING_PGN(new_addr);
 
     //get the PTE
     uint32_t pte = proc->mm->pgd[pgn];  
-    printf("png of address: %d, having PTE: %d\n",new_addr,pte);
+    printf("png of address: %d, having PTE: %u\n",new_addr,pte);
 
     //write the data on 
     if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
@@ -252,4 +252,5 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 }
 
 #endif
+
 
