@@ -173,7 +173,7 @@ int MEMPHY_dump(struct memphy_struct *mp)
    }
 
    printf("Memory content-[pos, content]: ");
-   for (int i = 0; i < mp->cursor; i++)
+   for (int i = 0; i < mp->maxsz; i++)
    {
       printf("[%d, %u] ", i, (unsigned char)mp->storage[i]);
    }
