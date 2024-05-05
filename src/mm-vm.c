@@ -10,10 +10,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-pthread_mutex_t vmlock;
-pthread_mutex_t memphylock;
-pthread_mutex_t memlock;
-pthread_mutex_t fifo_lock;
+
 /*enlist_vm_freerg_list - add new rg to freerg_list
  *@mm: memory region
  *@rg_elmt: new region
@@ -21,6 +18,8 @@ pthread_mutex_t fifo_lock;
  */
 int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
 {
+  
+
   struct vm_rg_struct *rg_node = mm->mmap->vm_freerg_list;
 
   if (rg_elmt.rg_start >= rg_elmt.rg_end)
@@ -36,6 +35,8 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
 
   newrg->rg_next = rg_node;
   mm->mmap->vm_freerg_list = newrg;
+
+
 
   return 0;
 }
@@ -88,10 +89,6 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
  *
  */int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
 {
-  pthread_mutex_lock(&vmlock);
-  
-  /* Lock the caller's mm struct */
-  pthread_mutex_lock(&memphylock);
 
   /* Allocate at the top of the memory region */
   struct vm_rg_struct rgnode;
@@ -107,14 +104,12 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     int fpn;
     if (MEMPHY_get_freefp(caller->mram, &fpn) == -1){
       // Failed to get a free frame
-      pthread_mutex_unlock(&memphylock);
-      pthread_mutex_unlock(&vmlock);
       return -1;
     }
 
-    pthread_mutex_lock(&memlock);
+    pthread_mutex_lock(&caller->mram->lock);
     MEMPHY_get_freefp(caller->mram, &fpn);
-    pthread_mutex_unlock(&memlock);
+    pthread_mutex_unlock(&caller->mram->lock);
 
     // Calculate the page number
     int pgn = PAGING_PGN(rgnode.rg_start);
@@ -122,8 +117,6 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     // Set the page table entry
     pte_set_fpn(&caller->mm->pgd[pgn], fpn);
 
-    pthread_mutex_unlock(&memphylock);
-    pthread_mutex_unlock(&vmlock);
     return 0;
   }
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
@@ -141,8 +134,6 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
   if(inc_vma_limit(caller, vmaid, inc_sz) == -1)
   {
-    pthread_mutex_unlock(&memphylock);
-    pthread_mutex_unlock(&vmlock);
     return -1;
   }
 
@@ -151,9 +142,6 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
   *alloc_addr = old_sbrk;
-
-  pthread_mutex_unlock(&memphylock);
-  pthread_mutex_unlock(&vmlock);
   return 0;
 }
 
@@ -167,6 +155,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
  */
 int __free(struct pcb_t *caller, int vmaid, int rgid)
 {
+  
   struct vm_rg_struct *rgnode;
 
   if(rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
@@ -186,6 +175,7 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 
   /*enlist the obsoleted memory region */
   enlist_vm_freerg_list(caller->mm, *rgnode);
+
 
   return 0;
 }
@@ -223,6 +213,8 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
  */
 int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
+  
+
   uint32_t pte = mm->pgd[pgn];
   if (!PAGING_PAGE_PRESENT(pte)) // A frame has not been assigned for this page
   {
@@ -234,7 +226,11 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       uint32_t vic_pte = mm->pgd[vicpgn];
       int vicfpn = PAGING_FPN(vic_pte);
       int swpfpn;
+
+      pthread_mutex_lock(&mem_lock);
       MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+      pthread_mutex_unlock(&mem_lock);
+
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
       new_fpn = vicfpn;
@@ -253,7 +249,10 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     int vicfpn = PAGING_FPN(vic_pte);
 
     /* Get free frame in MEMSWP */
+    
+    pthread_mutex_lock(&caller->mram->lock);
     MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+    pthread_mutex_unlock(&caller->mram->lock);
 
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
@@ -312,6 +311,8 @@ int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
  */
 int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
 {
+  
+
   int pgn = PAGING_PGN(addr);
   int off = PAGING_OFFST(addr);
   int fpn;

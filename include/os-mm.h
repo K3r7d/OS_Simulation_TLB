@@ -6,6 +6,7 @@
 #define PAGING_MAX_SYMTBL_SZ 30
 
 #include <pthread.h>
+#include <sys/types.h>  
 
 typedef char BYTE;
 typedef uint32_t addr_t;
@@ -88,7 +89,8 @@ struct memphy_struct {
    struct framephy_struct *fifo_fp_list; // first in first out frame list
 
    /*Mutex Lock*/
-
+   pthread_mutex_t lock;
+   pthread_mutex_t fifo_lock;
    
 };
 

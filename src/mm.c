@@ -148,7 +148,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
       /* Find victim page */
       if (find_victim_page(caller->mm, &victim_pte) < 0) return -1;
       
-      int victim_fpn = PAGING_PGN(*victim_pte);
+      int victim_fpn = PAGING_PGN(victim_pte);
 
       /* Get free frame in MEMSWP */
       int free_swp = MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
