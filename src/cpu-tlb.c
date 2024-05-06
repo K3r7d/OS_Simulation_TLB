@@ -58,7 +58,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
-  printf("tlballoc!, size: %d, reg_index: %d \n", size,reg_index);
+  printf("tlballoc!, size: %d, reg_index: %d call by pid: %d \n", size,reg_index,proc->pid);
   if(proc->tlb == NULL) return -1; 
   int addr, val;
 
@@ -90,7 +90,7 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
     //get the PTE
     uint32_t pte = proc->mm->pgd[pgn];  
-    printf("png of address: %d, having PTE: %u\n",new_addr,pte);
+    printf("png of address: %d, having PTE: %u\n",pgn,pte);
 
     //write the data on 
     if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
@@ -127,7 +127,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
             uint32_t offset,  uint32_t destination) 
 {
   //done 
-  printf("read!\n");
+  printf("read!\n\n\n");
   BYTE data; 
   int frmnum = -1;
   BYTE check = 0; 
@@ -146,6 +146,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
       //if not exists -> get PAGE!, if not exists -> ERROR!
       if(pg_getpage(proc->mm,pgn,&frmnum,proc) != 0) // Need page is loaded into RAM  
         return -1; /* invalid page access */
+      printf("Need to getpage \n\n\n"); 
 
   } 
   
@@ -197,6 +198,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 int tlbwrite(struct pcb_t * proc, BYTE data,
              uint32_t destination, uint32_t offset)
 {
+  printf("write\n\n\n");
   int val;
   int frmnum = -1;
   BYTE check = 0; 
@@ -244,6 +246,10 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
       /* by using tlb_cache_read()/tlb_cache_write()*/
       val = __write(proc, 0, destination, offset, data);
       uint32_t pte = proc->mm->pgd[pgn];  
+      printf (
+        "Old value PLB of PID: %d, PNG: %d, having PTE: %u\n New value PLB of PID: %d, PNG: %d, having PTE: %u\n",tlb_pid(proc->tlb,pgn),pgn,tlb_pte(proc->tlb,pgn), proc->pid,pgn,pte
+      );
+
       //perform writting on cache 
         if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) 
             return -1; /*cannot write~*/

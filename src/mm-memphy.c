@@ -166,24 +166,24 @@ int MEMPHY_dump(struct memphy_struct *mp)
       return -1;
    }
 
-   if (pthread_mutex_lock(&mp->lock) != 0)
-   {
-      perror("Error: failed to lock mutex");
-      return -1;
-   }
+   // if (pthread_mutex_lock(&mp->lock) != 0)
+   // {
+   //    perror("Error: failed to lock mutex");
+   //    return -1;
+   // }
 
-   printf("Memory content-[pos, content]: ");
-   for (int i = 0; i < mp->maxsz; i++)
-   {
-      printf("[%d, %u] ", i, (unsigned char)mp->storage[i]);
-   }
-   printf("\n");
+   // printf("Memory content-[pos, content]: ");
+   // for (int i = 0; i < mp->cursor; i++)
+   // {
+   //    printf("[%d, %u] ", i, (unsigned char)mp->storage[i]);
+   // }
+   // printf("\n");
 
-   if (pthread_mutex_unlock(&mp->lock) != 0)
-   {
-      perror("Error: failed to unlock mutex");
-      return -1;
-   }
+   // if (pthread_mutex_unlock(&mp->lock) != 0)
+   // {
+   //    perror("Error: failed to unlock mutex");
+   //    return -1;
+   // }
 
    return 0;
 }

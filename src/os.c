@@ -151,7 +151,7 @@ static void * ld_routine(void * args) {
 #ifdef MLQ_SCHED
 		proc->prio = ld_processes.prio[i];
 #else
-		// printf ("==== DEBUG ====: Priority: %d\n", proc->priority);
+		//printf ("==== DEBUG ====: Priority: %d\n", proc->priority);
 #endif
 		while (current_time() < ld_processes.start_time[i]) {
 			next_slot(timer_id);
