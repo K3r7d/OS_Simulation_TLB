@@ -98,19 +98,23 @@ void add_proc(struct pcb_t * proc) {
 	return add_mlq_proc(proc);
 }
 #else
-struct pcb_t * get_proc(void) 
+struct pcb_t * get_proc (void) 
 {
 	/*TODO: get a process from [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
 	struct pcb_t * proc = NULL;
 
-    pthread_mutex_lock(&queue_lock);
+    pthread_mutex_lock (&queue_lock);
 
-    if (!empty(&ready_queue))
-        proc = dequeue(&ready_queue);
+    if (empty (&ready_queue))
+		while (!empty (&run_queue))
+			enqueue (&ready_queue, dequeue (&run_queue));
 
-    pthread_mutex_unlock(&queue_lock);
+	if (!empty (&ready_queue)) 
+		proc = dequeue (&ready_queue);
+
+    pthread_mutex_unlock (&queue_lock);
 
     return proc;
 }
