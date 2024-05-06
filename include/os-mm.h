@@ -57,7 +57,6 @@ struct mm_struct {
    struct vm_rg_struct symrgtbl[PAGING_MAX_SYMTBL_SZ]; // symbol region table
 
    
-
    /* list of free page */
    struct pgn_t *fifo_pgn; // first in first out page number
 };

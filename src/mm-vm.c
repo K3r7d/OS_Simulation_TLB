@@ -101,14 +101,15 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
     // Map the page to physical memory
     int fpn;
+    pthread_mutex_lock(&caller->mram->lock);
     if (MEMPHY_get_freefp(caller->mram, &fpn) == -1){
       // Failed to get a free frame
+      pthread_mutex_unlock(&caller->mram->lock);
       return -1;
     }
-
-    pthread_mutex_lock(&caller->mram->lock);
-    MEMPHY_get_freefp(caller->mram, &fpn);
     pthread_mutex_unlock(&caller->mram->lock);
+
+    // MEMPHY_get_freefp(caller->mram, &fpn);
 
     // Calculate the page number
 
@@ -119,7 +120,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
     //get first page need
     int pgn = PAGING_PGN(rgnode.rg_start);
-    
+    printf("Alloc get fpn: %d \n",fpn);
     int i; 
     for(i = 0; i < incnumpage; i++) { 
       // Set the page table entry
@@ -128,6 +129,9 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
     return 0;
   }
+
+  printf("OUT of ALLOC! \n");
+
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
   /* Attempt to increase limit to get space */
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
@@ -149,6 +153,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   /* Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+
 
   *alloc_addr = old_sbrk;
 
@@ -519,6 +524,8 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   /* The obtained vm area (only) 
    * now will be alloc real ram region */
   cur_vma->vm_end += inc_sz;
+  cur_vma->sbrk += inc_sz; // update the heaps (ADD BY TAMI!)
+
   if (vm_map_ram(caller, area->rg_start, area->rg_end, 
                     old_end, incnumpage , newrg) < 0)
     return -1; /* Map the memory to MEMRAM */
