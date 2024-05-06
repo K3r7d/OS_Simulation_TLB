@@ -106,7 +106,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
     }
 
     // Map the frame to the page in the page table
-    caller->mm->pgd[pgn + pgit] = frames->fpn;
+    pte_set_fpn(&caller->mm->pgd[pgn + pgit],frames->fpn);
 
     /* Tracking for later page replacement activities (if needed)
     * Enqueue new usage page */
@@ -119,6 +119,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
     // Move to the next frame
     frames = frames->fp_next;
+
   }
   return 0;
 }
