@@ -103,7 +103,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
   {
     if(frames == NULL) {
       return -1; // Error: Not enough frames available
-    }
+  }
 
     // Map the frame to the page in the page table
     pte_set_fpn(&caller->mm->pgd[pgn + pgit],frames->fpn);

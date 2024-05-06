@@ -124,6 +124,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     int i; 
     for(i = 0; i < incnumpage; i++) { 
       // Set the page table entry
+      printf("Put into pte: %d, of caller_id: %d, fpn: %d\n",pgn+i,caller->pid,fpn+i);
       pte_set_fpn(&caller->mm->pgd[pgn+i], fpn+i);
     }
 
@@ -154,8 +155,15 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
-
   *alloc_addr = old_sbrk;
+
+   if (old_sbrk + size < cur_vma->vm_end) //check if the size is good or not
+  {
+    struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
+    rgnode->rg_start = old_sbrk + size;
+    rgnode->rg_end = cur_vma->vm_end;
+    enlist_vm_freerg_list(caller->mm, *rgnode);
+  }
 
   return 0;
 }
