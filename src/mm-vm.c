@@ -250,11 +250,11 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       int vicfpn = PAGING_FPN(vic_pte);
       int swpfpn;
 
-      pthread_mutex_lock(&caller->active_mswp->lock);
+      //pthread_mutex_lock(&caller->active_mswp->lock);
 
       MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
       
-      pthread_mutex_unlock(&caller->active_mswp->lock);
+      //pthread_mutex_unlock(&caller->active_mswp->lock);
 
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
@@ -279,29 +279,29 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     /* Get free frame in MEMSWP */
     
-    pthread_mutex_lock(&caller->active_mswp->lock);
+    //pthread_mutex_lock(&caller->active_mswp->lock);
     
     MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
     
-    pthread_mutex_unlock(&caller->active_mswp->lock);
+    //pthread_mutex_unlock(&caller->active_mswp->lock);
 
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
     //__swap_cp_page();
-    pthread_mutex_lock(&caller->mram->lock);
+    //pthread_mutex_lock(&caller->mram->lock);
     
     __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
     
-    pthread_mutex_unlock(&caller->mram->lock);
+    //pthread_mutex_unlock(&caller->mram->lock);
     /* Copy target frame from swap to mem */
     //__swap_cp_page();
 
 
-    pthread_mutex_lock(&caller->active_mswp->lock);
+    //pthread_mutex_lock(&caller->active_mswp->lock);
 
     __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
 
-    pthread_mutex_unlock(&caller->active_mswp->lock);
+    //pthread_mutex_unlock(&caller->active_mswp->lock);
     /* Update page table */
     // pte_set_swap() &mm->pgd;
     pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
@@ -598,7 +598,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
  */
 int find_victim_page(struct mm_struct *mm, int *retpgn) 
 {
-  pthread_mutex_lock(&mm->lock);
+  //pthread_mutex_lock(&mm->lock);
   struct pgn_t *pg = mm->fifo_pgn;
   struct pgn_t *pg_prev = NULL;
 
@@ -608,7 +608,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   
   // No page in fifo queue
   if(pg == NULL){
-    pthread_mutex_lock(&mm->lock);
+    //pthread_mutex_lock(&mm->lock);
     return -1;
   }
   // Get the victim page number
@@ -631,7 +631,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   if(retpgn != NULL)
     *retpgn = victim_page_number;
 
-  pthread_mutex_unlock(&mm->lock);
+  //pthread_mutex_unlock(&mm->lock);
   return 0;
 
   //==============================================================================
