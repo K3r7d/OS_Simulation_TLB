@@ -144,7 +144,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
       int vicpgn;
 
       //find victim page
-      find_victim_page(caller->mm, &vicpgn);
+      if(find_victim_page(caller->mm, &vicpgn) == -1) return -1;
 
       //get the victim_PTE
       uint32_t vic_pte = caller->mm->pgd[vicpgn];
