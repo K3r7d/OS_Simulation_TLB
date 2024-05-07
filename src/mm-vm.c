@@ -131,7 +131,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     return 0;
   }
 
-  printf("----------OUT of ALLOC!\n");
+  //printf("----------OUT of ALLOC!\n");
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
   /* Attempt to increase limit to get space */
@@ -392,8 +392,27 @@ int pgread(
     uint32_t destination) 
 {
   BYTE data;
-  int val = __read(proc, 0, source, offset, &data);
+  int addr = proc->regs[source] + offset; 
+  //CHECK IF IT IS ALLOC OR NOT !!!!!!!!!!!!!
+  struct vm_rg_struct *alloc_loc = &proc->mm->symrgtbl[destination]; 
 
+  if(alloc_loc->rg_end == alloc_loc->rg_start || alloc_loc->rg_end == 0) {printf("Segmentation Fault - Accessing the address is not allocated\n"); return -1;}
+  
+  int des; int good = -1; 
+  for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
+    int reg_start = proc->mm->symrgtbl[des].rg_start; 
+    int reg_end = proc->mm->symrgtbl[des].rg_end; 
+
+    if (addr <= reg_end && addr >= reg_start) {
+        good = 1; 
+        break; 
+    }
+  }
+  if(good == -1) {printf("Segmentation Fault - Accessing the address is not allocated\n"); return -1;}
+
+
+
+  int val = __read(proc, 0, source, offset, &data);
   destination = (uint32_t) data;
 #ifdef IODUMP
   printf("read region=%d offset=%d value=%d\n", source, offset, data);
@@ -435,6 +454,8 @@ int pgwrite(
     uint32_t destination, // Index of destination register
     uint32_t offset)
 {
+
+
 #ifdef IODUMP
   printf("write region=%d offset=%d value=%d\n", destination, offset, data);
 #ifdef PAGETBL_DUMP

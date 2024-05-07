@@ -99,6 +99,8 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 
   }
 
+  TLBMEMPHY_dump(proc->tlb);
+
   return val;
 }
 
@@ -148,14 +150,14 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
   proc->mm->symrgtbl[reg_index].rg_end = 0; 
 
   //recheck 
-  int des; 
-  printf("==================check_AFTER_FREE=====================\n");
-  for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
-    int reg_start = proc->mm->symrgtbl[des].rg_start; 
-    int reg_end = proc->mm->symrgtbl[des].rg_end; 
-    printf("regID: %d, reg_start: %d, reg_end: %d\n",des,reg_start,reg_end);
-  }
-  printf("======================DONE============================\n");
+  // int des; 
+  // printf("==================check_AFTER_FREE=====================\n");
+  // for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
+  //   int reg_start = proc->mm->symrgtbl[des].rg_start; 
+  //   int reg_end = proc->mm->symrgtbl[des].rg_end; 
+  //   printf("regID: %d, reg_start: %d, reg_end: %d\n",des,reg_start,reg_end);
+  // }
+  // printf("======================DONE============================\n");
 
   return 0;
 }
@@ -249,6 +251,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
             return -1; /*cannot write~*/
   } 
 
+  TLBMEMPHY_dump(proc->tlb);
   //get it into the process register! 
   proc->regs[destination] = (uint32_t)data; 
 
@@ -339,6 +342,8 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
         if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) 
             return -1; /*cannot write~*/
   }
+
+  TLBMEMPHY_dump(proc->tlb);
   return val;
 }
 

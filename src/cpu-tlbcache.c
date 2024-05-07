@@ -203,8 +203,14 @@ int TLBMEMPHY_dump(struct memphy_struct * mp)
    /*TODO dump memphy contnt mp->storage 
     *     for tracing the memory content
     */
-   MEMPHY_dump(mp); 
-
+   printf("==============TLB DUMP!===============:\n"); 
+   int nbpg = mp->maxsz / 10;
+   int i; int j; 
+   for(i = 0 ; i < 5; i++){ 
+      for(j = 0; j < 10; j++) printf(" mp[%02d]: %u |",i*10+j,mp->storage[i*10 + j] & 0xff);
+      printf("\n");
+   }
+   printf("=======================================\n");
    return 0;
 }
 
