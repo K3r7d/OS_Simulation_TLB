@@ -11,8 +11,6 @@ static pthread_mutex_t queue_lock;
 
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
-static int curr_prio = 0;
-static int curr_slot = MAX_PRIO;
 #endif
 
 int queue_empty(void) {
@@ -48,6 +46,9 @@ struct pcb_t * get_mlq_proc (void)
 {
     struct pcb_t * proc = NULL;
     pthread_mutex_lock (&queue_lock);
+
+	int curr_prio = 0;
+	int curr_slot = MAX_PRIO;
     
     for (int i = 0; i < MAX_PRIO; i++) 
 	{
