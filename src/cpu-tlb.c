@@ -241,6 +241,10 @@ int tlbread(struct pcb_t * proc, uint32_t source,
         //get the PTE from the table 
           uint32_t pte = proc->mm->pgd[pgn];  
         //perform writting on cache 
+           printf (
+           "Old value PLB of PID: %d, PNG: %d, having PTE: %u\n New value PLB of PID: %d, PNG: %d, having PTE: %u\n",tlb_pid(proc->tlb,pgn),pgn,tlb_pte(proc->tlb,pgn), proc->pid,pgn,pte
+            );
+
           if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) 
             return -1; /*cannot write~*/
   } 

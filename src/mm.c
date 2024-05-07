@@ -106,7 +106,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
   }
 
     // Map the frame to the page in the page table
-    printf("frames->fpn: %d,pgn+pgit: %d\n",frames->fpn,pgn+pgit);
+    //printf("frames->fpn: %d,pgn+pgit: %d\n",frames->fpn,pgn+pgit);
     pte_set_fpn(&caller->mm->pgd[pgn + pgit],frames->fpn);
 
     /* Tracking for later page replacement activities (if needed)

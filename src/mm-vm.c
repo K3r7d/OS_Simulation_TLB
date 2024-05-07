@@ -141,7 +141,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   int old_sbrk ;
   old_sbrk = cur_vma->sbrk;
 
-   printf("PID: %d, having old_sbrk: %d\n",caller->pid,old_sbrk);
+  //printf("PID: %d, having old_sbrk: %d\n",caller->pid,old_sbrk);
 
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
