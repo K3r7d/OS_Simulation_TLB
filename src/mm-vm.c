@@ -598,7 +598,9 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
  */
 int find_victim_page(struct mm_struct *mm, int *retpgn) 
 {
+  pthread_mutex_lock(&mm->lock);
   struct pgn_t *pg = mm->fifo_pgn;
+  struct pgn_t *pg_prev = NULL;
 
   /* TODO: Implement the theorical mechanism to find the victim page */
   
@@ -628,6 +630,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   if(retpgn != NULL)
     *retpgn = victim_page_number;
 
+  pthread_mutex_unlock(&mm->lock);
   return 0;
 
   //==============================================================================
