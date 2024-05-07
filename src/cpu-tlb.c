@@ -58,7 +58,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
  */
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
-  printf("tlballoc!, size: %d, reg_index: %d call by pid: %d \n", size,reg_index,proc->pid);
+  printf("TLB alloc function have entered!, size of alloc: %d, reg_index: %d call by pid: %d \n", size,reg_index,proc->pid);
   if(proc->tlb == NULL) return -1; 
   int addr, val;
 
@@ -129,7 +129,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
             uint32_t offset,  uint32_t destination) 
 {
   //done 
-  printf("read!\n\n\n");
+  printf("TLB-read function entered by PID: %d, at the source: %d and offset: %d\n",proc->pid,source,offset);
   BYTE data; 
   int frmnum = -1;
   BYTE check = 0; 
@@ -200,7 +200,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 int tlbwrite(struct pcb_t * proc, BYTE data,
              uint32_t destination, uint32_t offset)
 {
-  printf("writem at reg: %d, proc->id: %d\n\n\n",destination,proc->pid);
+  printf("TLB-write function entered by PID: %d, at the source: %d and offset: %d to records: %c\n",proc->pid,destination,offset,data);
   int val;
   int frmnum = -1;
   BYTE check = 0; 

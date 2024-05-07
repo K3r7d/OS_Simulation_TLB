@@ -85,7 +85,9 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
    int plb_pte = mp->storage[tlbnb*10 + 6] << 24 | mp->storage[tlbnb*10 + 7] << 16 | mp->storage[tlbnb*10 + 8] << 8 | mp->storage[tlbnb*10 + 9];
 
    int i;
-   for(i = 0; i < 10;i++) printf("mp->storage: %d %u tlbnb: %d\n",i,mp->storage[tlbnb*10+i],tlbnb*10);
+   //READ
+   printf("-----------TLB CACHE READ:\n");
+   for(i = 0; i < 10;i++) printf("mp->storage[%d]: %02u\n",tlbnb*10+i, mp->storage[tlbnb*10+i] & 0xff);
    //check_again  
    if(pid == plb_pid) {
       if(pgnum == plb_pgnum) {

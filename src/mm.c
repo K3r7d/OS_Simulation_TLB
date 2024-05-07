@@ -91,7 +91,6 @@ int vmap_page_range(struct pcb_t *caller, // process call
 {                                         // no guarantee all given pages are mapped
   
   int pgit = 0;
-  printf("addr: %d\n",addr);
   int pgn = PAGING_PGN(addr);
 
   ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
@@ -121,9 +120,6 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
     // Move to the next frame
     frames = frames->fp_next;
-
-
-
   }
   return 0;
 }
@@ -142,21 +138,33 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
   {
     struct framephy_struct *new_fp = malloc(sizeof(struct framephy_struct));
     if (MEMPHY_get_freefp(caller->mram, &fpn) != 0)
-    { // ERROR CODE of obtaining somes but not enough frames
-      // Find a victim page
+    { 
+
+      //RAM is full -> HAVE TO SWAP 
       int vicpgn;
+
+      //find victim page
       find_victim_page(caller->mm, &vicpgn);
+
+      //get the victim_PTE
       uint32_t vic_pte = caller->mm->pgd[vicpgn];
-      int vicfpn = PAGING_FPN(vic_pte);
-      // Find a free frame in mswp
+
+      //get the replaced fpn
+      int vic_fpn = PAGING_FPN(vic_pte);
+
+      // Find a free frame in mswp, we have not handle the state when mswq is full 
       int swpfpn;
       MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+
       // Copy content from mram to mswp
-      __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
-      pte_set_swap(&caller->mm->pgd[vicpgn], 0, swpfpn);
+      __swap_cp_page(caller->mram, vic_fpn, caller->active_mswp, swpfpn);
+      pte_set_swap(&caller->mm->pgd[vic_pgn], 0, swpfpn);
+
       // Return this victim frame to the free frame list
-      fpn = vicfpn;
+      fpn = vic_fpn;
     }
+
+    //put into the QUEUE
     new_fp->fpn = fpn;
     new_fp->fp_next = *frm_lst;
     *frm_lst = new_fp;
