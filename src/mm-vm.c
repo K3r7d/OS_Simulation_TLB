@@ -237,7 +237,6 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
  */
 int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
-  
 
   uint32_t pte = mm->pgd[pgn];
   if (!PAGING_PAGE_PRESENT(pte)) // A frame has not been assigned for this page
@@ -247,6 +246,8 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     { // RAM has no free frame
       int vicpgn;
       find_victim_page(caller->mm, &vicpgn);
+
+      /* TODO: Play with your paging theory here */
       uint32_t vic_pte = mm->pgd[vicpgn];
       int vicfpn = PAGING_FPN(vic_pte);
       int swpfpn;
@@ -260,6 +261,10 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       new_fpn = vicfpn;
     }
     pte_set_fpn(&mm->pgd[pgn], new_fpn);
+    #ifdef CPU_TLB
+    /* Update its onaline status of TLB (if needed) */
+    tlb_cache_write(caller->tlb,caller->pid,pgn,mm->pgd[pgn]);
+    #endif
   }
   else if (pte & PAGING_PTE_SWAPPED_MASK)
   { /* Page is not online, make it actively living */
@@ -294,10 +299,18 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     // pte_set_fpn() & mm->pgd[pgn];
     pte_set_fpn(&mm->pgd[pgn], vicfpn);
 
+    #ifdef CPU_TLB
+    /* Update its onaline status of TLB (if needed) */
+    tlb_cache_write(caller->tlb,caller->pid,pgn,mm->pgd[pgn]);
+    
+    #endif
+
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+    
   }
 
   *fpn = PAGING_FPN(mm->pgd[pgn]);
+
 
   return 0;
 }
