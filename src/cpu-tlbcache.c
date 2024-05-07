@@ -35,10 +35,10 @@
  // 0x AA BB: Pgnumber (14 bits store in 16 bits or 2 byte) 
  // 0x AA BB CC DD: PTE (32 bits or 4 bytes)
 void flush_rg(struct memphy_struct *mp, int tlbnb){
-   if(tlbnb + 10 >= mp->maxsz) return; 
+   if(tlbnb*10 + 10 >= mp->maxsz) return; 
    int index; 
    for(index = 0; index < 10; index++){
-      mp->storage[tlbnb + index] = 0; 
+      mp->storage[tlbnb*10 + index] = 0; 
    } 
 
 } 
@@ -86,9 +86,10 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
 
    int i;
    //READ
-   printf("-----------TLB CACHE READ:\n");
-   for(i = 0; i < 10;i++) printf("mp->storage[%d]: %02u\n",tlbnb*10+i, mp->storage[tlbnb*10+i] & 0xff);
+   // printf("-----------TLB CACHE READ:\n");
+   // for(i = 0; i < 10;i++) printf("mp->storage[%d]: %02u\n",tlbnb*10+i, mp->storage[tlbnb*10+i] & 0xff);
    //check_again  
+
    if(pid == plb_pid) {
       if(pgnum == plb_pgnum) {
 
@@ -133,7 +134,7 @@ int tlb_cache_write(struct memphy_struct *mp,
    //implement the jump parameter, 10 storing byte  
    int szof = mp->maxsz / 10; 
    int tlbnb = pgnum % szof;
-   printf("tlbnb: %d\n",tlbnb*10);
+   // printf("tlbnb: %d\n",tlbnb*10);
 
         //perform of writing pid onto PLB 
         mp->storage[tlbnb*10] = (pid >> 24) & 0xff; //HIGH byte of holding PLB
@@ -151,11 +152,10 @@ int tlb_cache_write(struct memphy_struct *mp,
         mp->storage[tlbnb*10 + 7] = (pte >> 16) & 0xff;  
         mp->storage[tlbnb*10 + 8] = (pte >> 8) & 0xff;
         mp->storage[tlbnb*10 + 9] = (pte) & 0xff;  //LOW byte holding pg number 
-        printf("PTE: %d\n",pte);
-         printf("The data: %d %d %d %d\n",(pte >> 24) & 0xff,(pte >> 16) & 0xff,(pte >> 8) & 0xff,(pte) & 0xff);
-        printf("It records: %d\n",mp->storage[tlbnb*10 + 6] << 24 | mp->storage[tlbnb*10 + 7] << 16 | mp->storage[tlbnb*10 + 8] << 8 | mp->storage[tlbnb*10 + 9]);
 
-
+      //   printf("PTE: %d\n",pte);
+      //   printf("The data: %d %d %d %d\n",(pte >> 24) & 0xff,(pte >> 16) & 0xff,(pte >> 8) & 0xff,(pte) & 0xff);
+      //   printf("It records: %d\n",mp->storage[tlbnb*10 + 6] << 24 | mp->storage[tlbnb*10 + 7] << 16 | mp->storage[tlbnb*10 + 8] << 8 | mp->storage[tlbnb*10 + 9]);
    return 0; 
 }
 

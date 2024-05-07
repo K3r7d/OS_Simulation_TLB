@@ -158,7 +158,7 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
 
       // Copy content from mram to mswp
       __swap_cp_page(caller->mram, vic_fpn, caller->active_mswp, swpfpn);
-      pte_set_swap(&caller->mm->pgd[vic_pgn], 0, swpfpn);
+      pte_set_swap(&caller->mm->pgd[vicpgn], 0, swpfpn);
 
       // Return this victim frame to the free frame list
       fpn = vic_fpn;

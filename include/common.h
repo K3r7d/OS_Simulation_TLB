@@ -93,7 +93,7 @@ struct pcb_t {
 
 };
 
-void toString_pcb (const struct pcb_t * proc);
+void toString_pcb (const struct pcb_t * proc); 
 
 #endif
 

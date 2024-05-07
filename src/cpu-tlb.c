@@ -88,11 +88,11 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
     //get page
     int pgn = PAGING_PGN(new_addr);
 
-    printf("pgn from alloc: %d\n",pgn);
+    //printf("pgn from alloc: %d\n",pgn);
 
     //get the PTE
     uint32_t pte = proc->mm->pgd[pgn];  
-    printf("pid: ,png of address: %d, having PTE: %u\n",pgn,pte);
+    //printf("pid: ,png of address: %d, having PTE: %u\n",pgn,pte);
 
     //write the data on 
     if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
@@ -114,7 +114,48 @@ int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
   /* TODO update TLB CACHED frame num of freed page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
 
-  // 
+  //Test free() 
+  //printf("DEBUG: =====\n Free regionID: %d, of procID: %d\n",reg_index,proc->pid);
+
+  //get the reg_start  
+  int reg_start = proc->mm->symrgtbl[reg_index].rg_start; 
+
+  //get the reg_end 
+  int reg_end = proc->mm->symrgtbl[reg_index].rg_end; 
+
+  if(reg_end == 0) {printf("Aborted - Free region that is not allocated!\n"); return -1;} 
+
+  //get the size 
+  int size = reg_end - reg_start;  
+
+  //get number of page 
+  int nbpg = size / PAGING_PAGESZ; 
+
+  //check state 
+  int pgn = PAGING_PGN(reg_start); 
+  int i; 
+  BYTE dummy;
+  for(i = 0; i < nbpg; i++){
+      if(tlb_cache_read(proc->tlb,proc->pid,pgn + i,&dummy) >= 0){
+          int szof = proc->tlb->maxsz / 10; 
+          int tlbnb = (pgn + i) % szof;
+          flush_rg(proc->tlb,tlbnb); 
+      }
+  } 
+
+  //get every thing done by it's nature 
+  proc->mm->symrgtbl[reg_index].rg_start = 0; 
+  proc->mm->symrgtbl[reg_index].rg_end = 0; 
+
+  //recheck 
+  int des; 
+  printf("==================check_AFTER_FREE=====================\n");
+  for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
+    int reg_start = proc->mm->symrgtbl[des].rg_start; 
+    int reg_end = proc->mm->symrgtbl[des].rg_end; 
+    printf("regID: %d, reg_start: %d, reg_end: %d\n",des,reg_start,reg_end);
+  }
+  printf("======================DONE============================\n");
 
   return 0;
 }
@@ -133,7 +174,26 @@ int tlbread(struct pcb_t * proc, uint32_t source,
   BYTE data; 
   int frmnum = -1;
   BYTE check = 0; 
+
   int addr = proc->regs[source] + offset;
+
+  //CHECK IF IT IS ALLOC OR NOT !!!!!!!!!!!!!
+  struct vm_rg_struct *alloc_loc = &proc->mm->symrgtbl[destination]; 
+
+  if(alloc_loc->rg_end == alloc_loc->rg_start || alloc_loc->rg_end == 0) {printf("Segmentation Fault - Accessing the address is not allocated\n"); return -1;}
+  
+  int des; int good = -1; 
+  for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
+    int reg_start = proc->mm->symrgtbl[des].rg_start; 
+    int reg_end = proc->mm->symrgtbl[des].rg_end; 
+
+    if (addr <= reg_end && addr >= reg_start) {
+        good = 1; 
+        break; 
+    }
+  }
+  if(good == -1) {printf("Segmentation Fault - Accessing the address is not allocated\n"); return -1;}
+
   //getting the page number 
   int pgn = PAGING_PGN(addr);
 
@@ -206,6 +266,24 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
   BYTE check = 0; 
 
   int addr = proc->regs[destination] + offset;
+
+  //CHECK IF IT IS ALLOC OR NOT !!!!!!!!!!!!!
+  struct vm_rg_struct *alloc_loc = &proc->mm->symrgtbl[destination]; 
+
+  if(alloc_loc->rg_end == alloc_loc->rg_start || alloc_loc->rg_end == 0) {printf("Segmentation Fault - Address is not allocated\n"); return -1;}
+  
+  int des; int good = -1; 
+  for(des = 0; des < PAGING_MAX_SYMTBL_SZ; des++){
+    int reg_start = proc->mm->symrgtbl[des].rg_start; 
+    int reg_end = proc->mm->symrgtbl[des].rg_end; 
+
+    if (addr <= reg_end && addr >= reg_start) {
+        good = 1; 
+        break; 
+    }
+  }
+  if(good == -1) {printf("Segmentation Fault - Address is not allocated\n"); return -1;}
+
   //getting the page number and offset 
     int pgn = PAGING_PGN(addr);
     int off = PAGING_OFFST(addr);
@@ -261,5 +339,3 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 }
 
 #endif
-
-
