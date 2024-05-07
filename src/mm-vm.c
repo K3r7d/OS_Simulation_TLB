@@ -607,9 +607,10 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   //==============================================================================
   
   // No page in fifo queue
-  if(pg == NULL)
+  if(pg == NULL){
+    pthread_mutex_lock(&mm->lock);
     return -1;
-
+  }
   // Get the victim page number
   int victim_page_number = pg->pgn;
   
