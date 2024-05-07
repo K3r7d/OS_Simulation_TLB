@@ -186,12 +186,6 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
 
   /* TODO: Manage the collect freed region to freerg_list */
   //==============================================================================
-  
-
-  /* Check if the region is valid */
-  if(caller->mm->symrgtbl[rgid].rg_start == -1)
-    return -1;
-
   /* Get the start and end of the region */
   rgnode = get_symrg_byid(caller->mm, rgid);
   //==============================================================================
