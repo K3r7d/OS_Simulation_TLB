@@ -139,9 +139,10 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
   // //int inc_limit_ret
-  // int old_sbrk ;
+  int old_sbrk ;
+  old_sbrk = cur_vma->sbrk;
 
-  // old_sbrk = cur_vma->sbrk;
+   printf("PID: %d, old_sbrk: %d\n",caller->pid,old_sbrk);
 
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
@@ -152,15 +153,12 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
     return -1;
   }
 
-  int old_sbrk ;
-
-  old_sbrk = cur_vma->sbrk;
-
   /* Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
 
   *alloc_addr = old_sbrk;
+  printf("alloc_addr:%d\n",*alloc_addr);
 
    if (old_sbrk + size < cur_vma->vm_end) //check if the size is good or not
   {
