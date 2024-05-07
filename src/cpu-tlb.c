@@ -88,9 +88,11 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
     //get page
     int pgn = PAGING_PGN(new_addr);
 
+    printf("pgn from alloc: %d\n",pgn);
+
     //get the PTE
     uint32_t pte = proc->mm->pgd[pgn];  
-    printf("png of address: %d, having PTE: %u\n",pgn,pte);
+    printf("pid: ,png of address: %d, having PTE: %u\n",pgn,pte);
 
     //write the data on 
     if(tlb_cache_write(proc->tlb,proc->pid,pgn,pte) == -1) return -1; 
@@ -198,7 +200,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 int tlbwrite(struct pcb_t * proc, BYTE data,
              uint32_t destination, uint32_t offset)
 {
-  printf("write\n\n\n");
+  printf("writem at reg: %d, proc->id: %d\n\n\n",destination,proc->pid);
   int val;
   int frmnum = -1;
   BYTE check = 0; 
@@ -207,6 +209,7 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
   //getting the page number and offset 
     int pgn = PAGING_PGN(addr);
     int off = PAGING_OFFST(addr);
+  printf("PGN: %d\n", pgn);
  
   /* TODO retrieve TLB CACHED frame num of accessing page(s))*/
   /* by using tlb_cache_read()/tlb_cache_write()

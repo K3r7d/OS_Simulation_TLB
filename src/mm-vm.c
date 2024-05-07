@@ -135,12 +135,13 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
   /* Attempt to increase limit to get space */
+  printf("vmaid: %d\n",vmaid);
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
   int inc_sz = PAGING_PAGE_ALIGNSZ(size);
-  //int inc_limit_ret
-  int old_sbrk ;
+  // //int inc_limit_ret
+  // int old_sbrk ;
 
-  old_sbrk = cur_vma->sbrk;
+  // old_sbrk = cur_vma->sbrk;
 
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
@@ -150,6 +151,10 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   {
     return -1;
   }
+
+  int old_sbrk ;
+
+  old_sbrk = cur_vma->sbrk;
 
   /* Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;

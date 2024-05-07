@@ -76,15 +76,16 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, BYTE *data)
    int tlbnb = pgnum % szof;
 
    //get the stored value in tlb 
-   int plb_pid = mp->storage[tlbnb] << 24 | mp->storage[tlbnb + 1] << 16 | mp->storage[tlbnb + 2] << 8 | mp->storage[tlbnb + 3];
+   int plb_pid = mp->storage[tlbnb*10] << 24 | mp->storage[tlbnb*10 + 1] << 16 | mp->storage[tlbnb*10 + 2] << 8 | mp->storage[tlbnb*10 + 3];
 
    //get page number 
-   int plb_pgnum = mp->storage[tlbnb + 4] << 8 | mp->storage[tlbnb + 5];
+   int plb_pgnum = mp->storage[tlbnb*10 + 4] << 8 | mp->storage[tlbnb*10 + 5];
 
    //get PTE 
-   int plb_pte = mp->storage[tlbnb + 6] << 24 | mp->storage[tlbnb + 7] << 16 | mp->storage[tlbnb + 8] << 8 | mp->storage[tlbnb + 9];
+   int plb_pte = mp->storage[tlbnb*10 + 6] << 24 | mp->storage[tlbnb*10 + 7] << 16 | mp->storage[tlbnb*10 + 8] << 8 | mp->storage[tlbnb*10 + 9];
 
-
+   int i;
+   for(i = 0; i < 10;i++) printf("mp->storage: %d %u tlbnb: %d\n",i,mp->storage[tlbnb*10+i],tlbnb*10);
    //check_again  
    if(pid == plb_pid) {
       if(pgnum == plb_pgnum) {
@@ -130,22 +131,28 @@ int tlb_cache_write(struct memphy_struct *mp,
    //implement the jump parameter, 10 storing byte  
    int szof = mp->maxsz / 10; 
    int tlbnb = pgnum % szof;
+   printf("tlbnb: %d\n",tlbnb*10);
 
         //perform of writing pid onto PLB 
-        mp->storage[tlbnb] = (pid >> 24) & 0xff; //HIGH byte of holding PLB
-        mp->storage[tlbnb + 1] = (pid >> 16) & 0xff; 
-        mp->storage[tlbnb + 2] = (pid >> 8) & 0xff; 
-        mp->storage[tlbnb + 3] = (pid) & 0xff; //LOW byte of holding PLB
+        mp->storage[tlbnb*10] = (pid >> 24) & 0xff; //HIGH byte of holding PLB
+        mp->storage[tlbnb*10 + 1] = (pid >> 16) & 0xff; 
+        mp->storage[tlbnb*10 + 2] = (pid >> 8) & 0xff; 
+        mp->storage[tlbnb*10 + 3] = (pid) & 0xff; //LOW byte of holding PLB
+
 
         //HOLDING of pg number 
-        mp->storage[tlbnb + 4] = (pgnum >> 8) & 0xff; //HIGH byte holding pg number 
-        mp->storage[tlbnb + 5] = (pgnum) & 0xff;  //LOW byte holding pg number 
+        mp->storage[tlbnb*10 + 4] = (pgnum >> 8) & 0xff; //HIGH byte holding pg number 
+        mp->storage[tlbnb*10 + 5] = (pgnum) & 0xff;  //LOW byte holding pg number 
 
         //Holding of PTE
-        mp->storage[tlbnb + 6] = (pte >> 24) & 0xff; //HIGH byte holding pg number 
-        mp->storage[tlbnb + 7] = (pte >> 16) & 0xff;  
-        mp->storage[tlbnb + 8] = (pte >> 8) & 0xff;
-        mp->storage[tlbnb + 9] = (pte) & 0xff;  //LOW byte holding pg number 
+        mp->storage[tlbnb*10 + 6] = (pte >> 24) & 0xff; //HIGH byte holding pg number 
+        mp->storage[tlbnb*10 + 7] = (pte >> 16) & 0xff;  
+        mp->storage[tlbnb*10 + 8] = (pte >> 8) & 0xff;
+        mp->storage[tlbnb*10 + 9] = (pte) & 0xff;  //LOW byte holding pg number 
+        printf("PTE: %d\n",pte);
+         printf("The data: %d %d %d %d\n",(pte >> 24) & 0xff,(pte >> 16) & 0xff,(pte >> 8) & 0xff,(pte) & 0xff);
+        printf("It records: %d\n",mp->storage[tlbnb*10 + 6] << 24 | mp->storage[tlbnb*10 + 7] << 16 | mp->storage[tlbnb*10 + 8] << 8 | mp->storage[tlbnb*10 + 9]);
+
 
    return 0; 
 }

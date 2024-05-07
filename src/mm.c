@@ -91,6 +91,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
 {                                         // no guarantee all given pages are mapped
   
   int pgit = 0;
+  printf("addr: %d\n",addr);
   int pgn = PAGING_PGN(addr);
 
   ret_rg->rg_end = ret_rg->rg_start = addr; // at least the very first space is usable
@@ -106,6 +107,7 @@ int vmap_page_range(struct pcb_t *caller, // process call
   }
 
     // Map the frame to the page in the page table
+    printf("frames->fpn: %d,pgn+pgit: %d\n",frames->fpn,pgn+pgit);
     pte_set_fpn(&caller->mm->pgd[pgn + pgit],frames->fpn);
 
     /* Tracking for later page replacement activities (if needed)
@@ -119,6 +121,8 @@ int vmap_page_range(struct pcb_t *caller, // process call
 
     // Move to the next frame
     frames = frames->fp_next;
+
+
 
   }
   return 0;
