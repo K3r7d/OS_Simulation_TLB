@@ -99,34 +99,34 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
 
     *alloc_addr = rgnode.rg_start;
 
-    // Map the page to physical memory
-    int fpn;
-    pthread_mutex_lock(&caller->mram->lock);
-    if (MEMPHY_get_freefp(caller->mram, &fpn) == -1){
-      // Failed to get a free frame
-      pthread_mutex_unlock(&caller->mram->lock);
-      return -1;
-    }
-    pthread_mutex_unlock(&caller->mram->lock);
+    // // Map the page to physical memory
+    // int fpn;
+    // pthread_mutex_lock(&caller->mram->lock);
+    // if (MEMPHY_get_freefp(caller->mram, &fpn) == -1){
+    //   // Failed to get a free frame
+    //   pthread_mutex_unlock(&caller->mram->lock);
+    //   return -1;
+    // }
+    // pthread_mutex_unlock(&caller->mram->lock);
 
-    // MEMPHY_get_freefp(caller->mram, &fpn);
+    // // MEMPHY_get_freefp(caller->mram, &fpn);
 
-    // Calculate the page number
+    // // Calculate the page number
 
-    int inc_amt = PAGING_PAGE_ALIGNSZ(size);
+    // int inc_amt = PAGING_PAGE_ALIGNSZ(size);
 
-    //get total page need 
-    int incnumpage =  inc_amt / PAGING_PAGESZ;
+    // //get total page need 
+    // int incnumpage =  inc_amt / PAGING_PAGESZ;
 
-    //get first page need
-    int pgn = PAGING_PGN(rgnode.rg_start);
-    printf("Alloc get fpn: %d \n",fpn);
-    int i; 
-    for(i = 0; i < incnumpage; i++) { 
-      // Set the page table entry
-      printf("Put into pte: %d, of caller_id: %d, fpn: %d\n",pgn+i,caller->pid,fpn+i);
-      pte_set_fpn(&caller->mm->pgd[pgn+i], fpn+i);
-    }
+    // //get first page need
+    // int pgn = PAGING_PGN(rgnode.rg_start);
+    // printf("Alloc get fpn: %d \n",fpn);
+    // int i; 
+    // for(i = 0; i < incnumpage; i++) { 
+    //   // Set the page table entry
+    //   printf("Put into pte: %d, of caller_id: %d, fpn: %d\n",pgn+i,caller->pid,fpn+i);
+    //   pte_set_fpn(&caller->mm->pgd[pgn+i], fpn+i);
+    // }
 
     return 0;
   }
