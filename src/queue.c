@@ -53,8 +53,8 @@ struct pcb_t * dequeue(struct queue_t * q)
                 
         struct pcb_t * proc = q->proc[highest_priority_index];
         
-        for (int i = highest_priority_index; i < MAX_QUEUE_SIZE - 1; i++) 
-            q->proc[i] = q->proc[i + 1];
+        for (int i = highest_priority_index + 1; i < q->size; i++) 
+            q->proc[i - 1] = q->proc[i];
         
         q->size--;
         
