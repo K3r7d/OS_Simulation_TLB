@@ -250,9 +250,11 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       int vicfpn = PAGING_FPN(vic_pte);
       int swpfpn;
 
-      pthread_mutex_lock(&caller->mram->lock);
+      pthread_mutex_lock(&caller->active_mswp->lock);
+
       MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
-      pthread_mutex_unlock(&caller->mram->lock);
+      
+      pthread_mutex_unlock(&caller->active_mswp->lock);
 
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
@@ -277,18 +279,29 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     /* Get free frame in MEMSWP */
     
-    pthread_mutex_lock(&caller->mram->lock);
+    pthread_mutex_lock(&caller->active_mswp->lock);
+    
     MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
-    pthread_mutex_unlock(&caller->mram->lock);
+    
+    pthread_mutex_unlock(&caller->active_mswp->lock);
 
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
     //__swap_cp_page();
+    pthread_mutex_lock(&caller->mram->lock);
+    
     __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
+    
+    pthread_mutex_unlock(&caller->mram->lock);
     /* Copy target frame from swap to mem */
     //__swap_cp_page();
+
+
+    pthread_mutex_lock(&caller->active_mswp->lock);
+
     __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
 
+    pthread_mutex_unlock(&caller->active_mswp->lock);
     /* Update page table */
     // pte_set_swap() &mm->pgd;
     pte_set_swap(&mm->pgd[vicpgn], 0, swpfpn);
@@ -598,9 +611,18 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   // Get the victim page number
   int victim_page_number = pg->pgn;
   
-  // Remove the victim page from the queue
-  mm->fifo_pgn = pg->pg_next;
-  free(pg);
+  if(pg->pg_next == NULL)
+  {
+    // Remove the victim page from the queue
+    mm->fifo_pgn = NULL;
+    free(pg);
+  }
+  else
+  {
+    // Remove the victim page from the queue
+    mm->fifo_pgn = pg->pg_next;
+    free(pg);
+  }
 
   // Return the victim page number
   if(retpgn != NULL)
