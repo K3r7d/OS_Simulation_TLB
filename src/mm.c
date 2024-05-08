@@ -162,6 +162,11 @@ int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struc
 
       // Return this victim frame to the free frame list
       fpn = vic_fpn;
+
+      #ifdef CPU_TLB
+        BYTE dummy; 
+        if(tlb_cache_read(caller->tlb,caller->pid,vicpgn,&dummy) >= 0) tlb_cache_write(caller->tlb,caller->pid,vicpgn,caller->mm->pgd[vicpgn]);
+      #endif
     }
 
     //put into the QUEUE
