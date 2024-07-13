@@ -30,73 +30,9 @@ Comment `#define MLQ_SCHED 1` (we don't need it)
 
 With fixed mem size, uncomment the `#define MM_FIXED_MEMSZ 1`
 
-__Sample input__~~:~~
-
----
-
-1 12
-
-alloc 200 1
-
-alloc 200 2
-
-alloc 200 3
-
-alloc 200 4
-
-free 3
-
-alloc 100 5
-
-free 4
-
-alloc 100 6
-
-free 1
-
-free 2
-
-free 5
-
-free 6
-
----
-
 ##### 1.2.2. Non-fixed memory size:
 
 Comment the `#define MM_FIXED_MEMSZ 1`
-
-__Sample input__ (same with fixed one):
-
----
-
-1 12
-
-alloc 200 1
-
-alloc 200 2
-
-alloc 200 3
-
-alloc 200 4
-
-free 3
-
-alloc 100 5
-
-free 4
-
-alloc 100 6
-
-free 1
-
-free 2
-
-free 5
-
-free 6
-
----
 
 ### 1.3. Make all
 
